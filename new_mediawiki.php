@@ -150,15 +150,6 @@ class mediawiki {
         }
     }
 
-    /**
-     * @desc Our destructor, logs the account out if it is still logged in.
-     */
-    public function __destruct ()
-    {
-        if ( $this->loggedin )
-            echo 'Done. Not logging out.\n';
-            //$this->logout();
-    }
 }
 
 class MediawikiPage {
