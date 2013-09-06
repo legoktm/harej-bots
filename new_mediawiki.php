@@ -44,16 +44,26 @@ class mediawiki {
 		return $this->lasterror;
 	}
 
-	public function query ($query, $post = null) {
+	/**
+	 * Make an API request
+	 * @param $query array
+	 * @param bool|null $post
+	 * @return mixed
+	 */
+	public function query( $query, $post = null ) {
 		$query = $this->queryString($query);
-		if ( $post == null )
+		if ( $post === null )
 			$data = $this->http->get($this->url . $query);
 		else
 			$data = $this->http->post($this->url . $query, $post);
 		return unserialize($data);
 	}
 
-	protected function queryString ($query) {
+	/**
+	 * @param $query array
+	 * @return string
+	 */
+	protected function queryString( $query ) {
 		$return = "?format=php";
 		foreach ($query as $key => $value) {
 			$return .=  "&" . urlencode($key) . "=" . urlencode($value);
