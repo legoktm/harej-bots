@@ -232,34 +232,36 @@ class MediawikiPage {
 		
 		
 		if ( $x['error']['code'] == 'badtoken' && $retry ) {
-			$this->wiki->getedittoken(true);
+			$this->wiki->getedittoken( true );
 			return $this->edit($content,$summary,$minor,$bot,false);
 		}
 		
 		$this->getContent();
 	}
 	
-	public function addSection ($heading,$content,$minor=false,$bot=true,$retry=true) {
+	public function addSection ( $heading, $content, $minor=false, $bot=true, $retry=true ) {
 		echo "Adding Section \"$heading\" to [[".$this->title."]]\n";
 		$post = array(
-					  'title'   => $this->title,
-					  'text'	=> $content,
-					  'md5'	 => md5( $content ),
-					  'sectiontitle' => $heading,
-					  'section' => 'new',
-					  'token'   => $this->wiki->getedittoken(),
-					  'basetimestamp' => $this->ecTimestamp
+					'title'   => $this->title,
+					'text'	=> $content,
+					'md5'	 => md5( $content ),
+					'sectiontitle' => $heading,
+					'section' => 'new',
+					'token'   => $this->wiki->getedittoken(),
+					'basetimestamp' => $this->ecTimestamp
 					 );
-		if ( $minor )
+		if ( $minor ) {
 			$post['minor'] = true;
-		if ( $bot )
+		}
+		if ( $bot ) {
 			$post['bot'] = true;
-			
+		}
+
 		$x = $this->wiki->query( array('action' => 'edit'), $post );
 		
 		if ( $x['error']['code'] == 'badtoken' && $retry ) {
-			$this->wiki->getedittoken(true);
-			return $this->addSection($heading,$content,$minor,$bot,false);
+			$this->wiki->getedittoken( true );
+			return $this->addSection( $heading, $content, $minor, $bot, false );
 		}
 		
 		$this->getContent();
