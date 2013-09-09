@@ -436,9 +436,10 @@ class wikipedia {
      * Check if we're allowed to edit $page.
      * See http://en.wikipedia.org/wiki/Template:Bots
      * for more info.
-     * @param $page The page we want to edit.
-     * @param $user The bot's username.
-     * @return bool
+     * @param $page MediaWikiPage The page we want to edit.
+     * @param $user string The bot's username.
+     * @param $text string page text, will override page
+     * @return bool true if we can edit
      **/
     function nobots ($page,$user=null,$text=null) {
         if ($text == null) {
