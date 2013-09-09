@@ -762,7 +762,7 @@ $wiki->edit("Wikipedia:Good article nominations",$newpage,$editsummary->generate
 
 $newpage2 = explode('<!-- EVERYTHING BELOW THIS COMMENT IS UPDATED AUTOMATICALLY BY A BOT -->',$newpage2);
 $newpage2 = "<!-- EVERYTHING BELOW THIS COMMENT IS UPDATED AUTOMATICALLY BY A BOT -->\n" . $newpage2[1];
-$wiki->edit("User:$botuser/Recruitment Centre",$newpage2,$editsummary->generate(),false,true);
+$wiki->edit('User:GA bot/Recruitment Centre',$newpage2,$editsummary->generate(),false,true);
 
 $split = explode('<!-- EVERYTHING BELOW THIS COMMENT IS UPDATED AUTOMATICALLY BY A BOT -->',$newpage);
 $split2 = explode('<!-- EVERYTHING ABOVE THIS COMMENT IS UPDATED AUTOMATICALLY BY A BOT -->',$split[1]);
