@@ -572,7 +572,7 @@ foreach ($articles as $article) {
 				$contents .= "\n\n{{{$reviewpage}}}";
 			}
 			
-			if ($contents != $old_contents && $wiki->nobots($article,$botuser,$contents) == true) {
+			if ($contents != $old_contents && $wiki->nobots($article, 'GA bot' , $contents) == true) {
 				$wiki->edit($article,$contents,"Transcluding GA review",true,true);
 			}
 			
@@ -583,7 +583,9 @@ foreach ($articles as $article) {
 				$sig = $currentNom->getVar('reviewer');
 				$sig2 = "-- {{subst:user0|User=$sig}} ~~~~~";
 				$msg = "{{subst:GANotice|article=$currentNom|days=7}} <small>Message delivered by [[User:$botuser|$botuser]], on behalf of [[User:$sig|$sig]]</small> $sig2";
-				$noms_talk_page->edit($noms_talk_page->content() . "\n\n$msg","/* Your [[WP:GA|GA]] nomination of [[" . $currentNom . "]] */ new section");
+				if ( $wiki->nobots( $noms_talk_page, 'GA bot', $noms_talk_page->content() ) ) {
+					$noms_talk_page->edit($noms_talk_page->content() . "\n\n$msg","/* Your [[WP:GA|GA]] nomination of [[" . $currentNom . "]] */ new section");
+				}
 			}
 			
 			unset($old_contents);
@@ -643,7 +645,9 @@ foreach ($articles as $article) {
 				$sig = $currentNom->getVar('reviewer');
 				$sig2 = "-- {{subst:user0|User=$sig}} ~~~~~";
 				$msg = "{{subst:GANotice|article=$currentNom|result=hold}} <small>Message delivered by [[User:$botuser|$botuser]], on behalf of [[User:$sig|$sig]]</small> $sig2";
-				$noms_talk_page->edit($noms_talk_page->content() . "\n\n$msg","/* Your [[WP:GA|GA]] nomination of [[" . $currentNom . "]] */ new section");
+				if ( $wiki->nobots( $noms_talk_page, 'GA bot', $noms_talk_page->content() ) ) {
+					$noms_talk_page->edit($noms_talk_page->content() . "\n\n$msg","/* Your [[WP:GA|GA]] nomination of [[" . $currentNom . "]] */ new section");
+				}
 			}
 		}
 	}
@@ -681,7 +685,9 @@ while ($row = $selectQuery->fetch()) {
 			$sig = $row['reviewerplain'];
 			$sig2 = "-- {{subst:user0|User=$sig}} ~~~~~";
 			$msg = "{{subst:GANotice|article=".$row['page']."|result=pass}} <small>Message delivered by [[User:$botuser|$botuser]], on behalf of [[User:$sig|$sig]]</small> $sig2";
-			$noms_talk_page->edit($noms_talk_page->content() . "\n\n$msg","/* Your [[WP:GA|GA]] nomination of [[" . $row['page'] . "]] */ new section");
+			if ( $wiki->nobots( $noms_talk_page, 'GA bot', $noms_talk_page->content() ) ) {
+				$noms_talk_page->edit($noms_talk_page->content() . "\n\n$msg","/* Your [[WP:GA|GA]] nomination of [[" . $row['page'] . "]] */ new section");
+			}
 		}
 	} else {
 		$editsummary->failed($row['page'],$row['subtopic']);
@@ -693,7 +699,9 @@ while ($row = $selectQuery->fetch()) {
 			$sig = $row['reviewerplain'];
 			$sig2 = "-- {{subst:user0|User=$sig}} ~~~~~";
 			$msg = "{{subst:GANotice|article=".$row['page']."|result=fail}} <small>Message delivered by [[User:$botuser|$botuser]], on behalf of [[User:$sig|$sig]]</small> $sig2";
-			$noms_talk_page->edit($noms_talk_page->content() . "\n\n$msg","/* Your [[WP:GA|GA]] nomination of [[" . $row['page'] . "]] */ new section");
+			if ( $wiki->nobots( $noms_talk_page, 'GA bot', $noms_talk_page->content() ) ) {
+				$noms_talk_page->edit($noms_talk_page->content() . "\n\n$msg","/* Your [[WP:GA|GA]] nomination of [[" . $row['page'] . "]] */ new section");
+			}
 		}
 	}
 	
