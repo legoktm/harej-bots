@@ -25,6 +25,7 @@
 
 ini_set("display_errors", 1);
 error_reporting(E_ALL ^ E_NOTICE);
+mysqli_report(MYSQLI_REPORT_ALL);
 
 function generateRfcId ($tries=0) {
 	global $rfcdb, $wiki;
