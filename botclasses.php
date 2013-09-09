@@ -198,9 +198,11 @@ class wikipedia {
 
     /**
      * Sends a query to the api.
-     * @param $query The query string.
-     * @param $post POST data if its a post request (optional).
-     * @return The api result.
+     * @param $query string The query string.
+     * @param $post string POST data if its a post request (optional).
+     * @param $repeat int how many times we've repeated this request
+     * @return array The api result.
+     * @throws Exception on HTTP errors
      **/
     function query ($query,$post=null,$repeat=0) {
         if ($post==null) {
@@ -459,9 +461,9 @@ class wikipedia {
 
     /**
      * This function returns the edit token for the current user.
-     * @return edit token.
+     * @return string edit token.
      **/
-    function getedittoken () {
+    function getedittoken() {
         $x = $this->query('?action=query&prop=info&intoken=edit&titles=Main%20Page&format=php');
         foreach ($x['query']['pages'] as $ret) {
             return $ret['edittoken'];
