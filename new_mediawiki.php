@@ -51,7 +51,11 @@ class mediawiki {
 	 * @return mixed
 	 */
 	public function query( $query, $post = null ) {
-		$query = $this->queryString($query);
+		if ( is_array($query) ) {
+			$query = $this->queryString($query);
+		} else {
+			$query .= '&format=php';
+		}
 		if ( $post === null || $post === false ) {
 			$data = $this->http->get($this->url . $query);
 		} else {
