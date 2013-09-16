@@ -29,6 +29,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 
 $botuser = 'Legobot';
 
+require_once 'botclasses.php';
 require_once 'new_mediawiki.php';
 require_once 'harejpass.php';
 $wiki = new mediawiki($botuser, $botpass);
