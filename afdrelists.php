@@ -25,7 +25,7 @@
 ini_set("display_errors", 1);
 error_reporting(E_ALL ^ E_NOTICE);
 
-$botuser = 'One bot';
+$botuser = 'Legobot';
 require_once 'botclasses.php';  // Botclasses.php was written by User:Chris_G and is available under the GNU General Public License
 require_once 'harejpass.php';
 

@@ -26,7 +26,7 @@
 ini_set("display_errors", 1);
 error_reporting(E_ALL ^ E_NOTICE);
 
-$botuser = 'RFC bot';
+$botuser = 'Legobot';
 
 require_once 'database.inc';
 require_once 'new_mediawiki.php';
