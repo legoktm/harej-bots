@@ -445,12 +445,12 @@ $toolserver_password = $toolserver_mycnf['password'];
 
 $db_enwiki = new database('enwiki.labsdb',$toolserver_username,$toolserver_password,'enwiki_p');
 $db_central = new database('centralauth.labsdb',$toolserver_username,$toolserver_password,'centralauth_p');
-//require_once 'botclasses.php';
+require_once 'botclasses.php';
 require_once 'new_mediawiki.php';
 
 $user = 'Legobot';
 require_once 'harejpass.php';
-$wiki = new mediawiki('http://en.wikipedia.org/w/api.php',$user,$botpass);
+$wiki = new mediawiki($user,$botpass);
 $page = trim(strtolower($wiki->getpage("User:$user/clerk")));
 if ($page=='true') {
 	$chu = new chu('Wikipedia:Changing username/Simple',true);

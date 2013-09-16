@@ -161,7 +161,7 @@ class mediawiki {
 	}
 
 	public function getpage( $title ) {
-		$pg = MediawikiPage($this, $title);
+		$pg = new MediawikiPage($this, $title);
 		return $pg->content();
 	}
 
