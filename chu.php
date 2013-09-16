@@ -439,7 +439,7 @@ class chu {
 
 /* Connect to the database */
 
-$toolserver_mycnf = parse_ini_file("/data/project/legobot/.my.cnf");
+$toolserver_mycnf = parse_ini_file("/data/project/legobot/replica.my.cnf");
 $toolserver_username = $toolserver_mycnf['user'];
 $toolserver_password = $toolserver_mycnf['password'];
 
