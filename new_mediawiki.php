@@ -170,36 +170,6 @@ class mediawiki {
 		return $pg->content();
 	}
 
-	/**
-	 * Edits a page.
-	 * @param $page string Page name to edit.
-	 * @param $data string Data to post to page.
-	 * @param $summary string Edit summary to use.
-	 * @param $bot bool Whether or not to mark edit as a bot edit.  (Default true)
-	 * @param $minor bool Whether or not to mark edit as minor.  (Default false)
-	 * @param $section int section to edit
-	 * @return mixed api result
-	 **/
-	function edit ($page,$data,$summary = '',$minor = false,$bot = true,$section = null) {
-		if ($this->edittoken==null) {
-			$this->edittoken = $this->getedittoken();
-		}
-		$params = array(
-			'action' => 'edit',
-			'title' => $page,
-			'text' => $data,
-			'token' => $this->edittoken,
-			'summary' => $summary,
-			($minor?'minor':'notminor') => '1',
-			($bot?'bot':'notbot') => '1'
-		);
-		if ($section != null) {
-			$params['section'] = $section;
-		}
-		return $this->query($params, true );
-	}
-
-
 }
 
 class MediawikiPage {
