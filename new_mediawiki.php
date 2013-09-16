@@ -52,10 +52,11 @@ class mediawiki {
 	 */
 	public function query( $query, $post = null ) {
 		$query = $this->queryString($query);
-		if ( $post === null )
+		if ( $post === null || $post === false ) {
 			$data = $this->http->get($this->url . $query);
-		else
+		} else {
 			$data = $this->http->post($this->url . $query, $post);
+		}
 		return unserialize($data);
 	}
 
@@ -115,7 +116,7 @@ class mediawiki {
 	/**
 	 * @desc Returns the bot's edit token.
 	 * @param bool (default=false) $force - Force the script to get a fresh edit token.
-	 * @returns mixed - Returns the account's edittoken on success or false on failure.
+	 * @return mixed - Returns the account's edittoken on success or false on failure.
 	 */
 	public function getedittoken ($force = false) {
 		if ( $this->edittoken != null && $force == false )
@@ -168,8 +169,18 @@ class mediawiki {
 }
 
 class MediawikiPage {
-	private $wiki, $title, $content, $id, $exists, $ecTimestamp=null;
-	
+	/** @var mediawiki */
+	private $wiki;
+	/** @var string */
+	private $title;
+	/** @var string */
+	private $content;
+	/** @var int */
+	private $id;
+	/** @var bool */
+	private $exists;
+	private $ecTimestamp = null;
+
 	public function __construct ($wiki,$title) {
 		echo "New page [[$title]].\n";
 		$this->wiki = $wiki;
@@ -227,7 +238,15 @@ class MediawikiPage {
 	public function content () {
 		return $this->content;
 	}
-	
+
+	/**
+	 * @param string $content
+	 * @param string $summary
+	 * @param bool $minor
+	 * @param bool $bot
+	 * @param bool $retry whether to retry on bad token errors
+	 * @return array
+	 */
 	public function edit ($content,$summary="",$minor=false,$bot=true,$retry=true) {
 		echo "Saving [[".$this->title."]]\n";
 		$post = array(
@@ -245,15 +264,24 @@ class MediawikiPage {
 			
 		$x = $this->wiki->query( array('action' => 'edit'), $post );
 		
-		
 		if ( $x['error']['code'] == 'badtoken' && $retry ) {
 			$this->wiki->getedittoken( true );
 			return $this->edit($content,$summary,$minor,$bot,false);
 		}
 		
 		$this->getContent();
+		return $x;
 	}
-	
+
+	/**
+	 * Add a new section to the page
+	 * @param $heading string
+	 * @param $content string
+	 * @param bool $minor
+	 * @param bool $bot
+	 * @param bool $retry
+	 * @return mixed
+	 */
 	public function addSection ( $heading, $content, $minor=false, $bot=true, $retry=true ) {
 		echo "Adding Section \"$heading\" to [[".$this->title."]]\n";
 		$post = array(
@@ -280,6 +308,7 @@ class MediawikiPage {
 		}
 		
 		$this->getContent();
+		return $x;
 	}
 	
 	public function exists () {
