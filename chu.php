@@ -19,6 +19,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *   
  *  Developers (add your self here if you worked on the code):
+ *      Kunal - [[User:Legoktm]] - fixed to run on labs
  *  	Chris - [[User:Chris_G]] - Wrote up the code
  **/
 
@@ -437,15 +438,19 @@ class chu {
 }
 
 /* Connect to the database */
-require_once('database.inc');
-$db_enwiki = new database('enwiki-p.rrdb.toolserver.org',$toolserver_username,$toolserver_password,'enwiki_p');
-$db_central = new database('sql-s7-rr.toolserver.org',$toolserver_username,$toolserver_password,'centralauth_p');
+
+$toolserver_mycnf = parse_ini_file("/data/project/legobot/.my.cnf");
+$toolserver_username = $toolserver_mycnf['user'];
+$toolserver_password = $toolserver_mycnf['password'];
+
+$db_enwiki = new database('enwiki.labsdb',$toolserver_username,$toolserver_password,'enwiki_p');
+$db_central = new database('centralauth.labsdb',$toolserver_username,$toolserver_password,'centralauth_p');
 
 require_once 'mediawiki.php';
 
-$user = 'Chris G Bot 3';
-require_once 'password.php';
-$wiki = new mediawiki('http://en.wikipedia.org/w/api.php',$user,$pass);
+$user = 'Legobot';
+require_once 'harejpass.php';
+$wiki = new mediawiki('http://en.wikipedia.org/w/api.php',$user,$botpass);
 $page = trim(strtolower($wiki->getpage("User:$user/clerk")));
 if ($page=='true') {
 	$chu = new chu('Wikipedia:Changing username/Simple',true);
