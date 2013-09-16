@@ -445,7 +445,7 @@ $toolserver_password = $toolserver_mycnf['password'];
 
 $db_enwiki = new database('enwiki.labsdb',$toolserver_username,$toolserver_password,'enwiki_p');
 $db_central = new database('centralauth.labsdb',$toolserver_username,$toolserver_password,'centralauth_p');
-require_once 'botclasses.php';
+//require_once 'botclasses.php';
 require_once 'mediawiki.php';
 
 $user = 'Legobot';
