@@ -124,13 +124,5 @@ class mediawiki {
 		return false;
 	}
 
-	/**
-	 * @desc Our destructor, logs the account out if it is still logged in.
-	 */
-	public function __destruct ()
-	{
-		if ( $this->loggedin )
-			$this->logout();
-	}
 }
 
