@@ -19,6 +19,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *   
  *  Developers (add yourself here if you worked on the code):
+ *    Kunal Mehta - [[User:Legoktm]]  - Minor fix to run on Tool Labs
  *    Chris Grant - [[User:Chris G]]  - Completely rewrote the code
  *    James Hare  - [[User:Harej]]    - Wrote the orignial bot
  **/
@@ -28,7 +29,6 @@ error_reporting(E_ALL ^ E_NOTICE);
 
 $botuser = 'Legobot';
 
-require_once 'database.inc';
 require_once 'new_mediawiki.php';
 require_once 'harejpass.php';
 $wiki = new mediawiki($botuser, $botpass);
@@ -37,7 +37,12 @@ $RFC_categories	= array(
 	"bio", "hist", "econ", "sci", "lang", "media", "pol", "reli", "soc", "style", "policy", "proj", "tech", "prop", "unsorted","all"
 			);
 
-$rfcdb = new mysqli('sql',$toolserver_username,$toolserver_password,'u_chris_rfc');
+$toolserver_mycnf = parse_ini_file("/data/project/legobot/.my.cnf");
+$toolserver_username = $toolserver_mycnf['user'];
+$toolserver_password = $toolserver_mycnf['password'];
+
+
+$rfcdb = new mysqli('tools-db',$toolserver_username,$toolserver_password,'locallegobot');
 if(mysqli_connect_errno()) {
 	echo "Connection Failed: " . mysqli_connect_errno();
 	die();
