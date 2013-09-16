@@ -160,6 +160,11 @@ class mediawiki {
 		}
 	}
 
+	public function getpage( $title ) {
+		$pg = MediawikiPage($this, $title);
+		return $pg->content();
+	}
+
 }
 
 class MediawikiPage {

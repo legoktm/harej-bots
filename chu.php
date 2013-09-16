@@ -334,7 +334,7 @@ class chu {
 	
 	protected function getcrats () {
 		global $wiki;
-		$x = $wiki->querycontinue('?action=query&list=allusers&augroup=bureaucrat&aulimit=500');
+		$x = $wiki->query('?action=query&list=allusers&augroup=bureaucrat&aulimit=500');
 		foreach ($x['query']['allusers'] as $t) {
 			$crats[] = $t['name'];
 		}
@@ -446,7 +446,7 @@ $toolserver_password = $toolserver_mycnf['password'];
 $db_enwiki = new database('enwiki.labsdb',$toolserver_username,$toolserver_password,'enwiki_p');
 $db_central = new database('centralauth.labsdb',$toolserver_username,$toolserver_password,'centralauth_p');
 //require_once 'botclasses.php';
-require_once 'mediawiki.php';
+require_once 'new_mediawiki.php';
 
 $user = 'Legobot';
 require_once 'harejpass.php';
