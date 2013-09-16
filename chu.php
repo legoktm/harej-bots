@@ -99,7 +99,9 @@ class chu {
 			$i++;
 		}
 		if ($header.$requeststokeep != $oldcontent) {
-			$x = $wiki->edit($page,$header.$requeststokeep,$this->editsum($donerequestcount,$notdonerequestcount,$done,$notdone),true);
+			$pg = new MediawikiPage($wiki, $page);
+			$x = $pg->edit($header.$requeststokeep, $this->editsum($donerequestcount,$notdonerequestcount,$done,$notdone),true);
+			//$x = $wiki->edit($page,$header.$requeststokeep,$this->editsum($donerequestcount,$notdonerequestcount,$done,$notdone),true);
 			if (!$x) {
 				die("Error editing $page\n");
 			}
