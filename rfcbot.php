@@ -25,7 +25,7 @@
 
 ini_set("display_errors", 1);
 error_reporting(E_ALL ^ E_NOTICE);
-mysqli_report(MYSQLI_REPORT_ALL);
+//mysqli_report(MYSQLI_REPORT_ALL);
 
 function generateRfcId ($tries=0) {
 	global $rfcdb, $wiki;
@@ -274,7 +274,7 @@ foreach ($transclusions as $page) {
 				$notExpired->execute();
 				$notExpired->close();
 			} else {
-				$insertId = $rfcdb->prepare("INSERT INTO `rfc` (`rfc_id`, `rfc_page`, `rfc_contacted`) VALUES (?, ?, 0);");
+				$insertId = $rfcdb->prepare("INSERT IGNORE INTO `rfc` (`rfc_id`, `rfc_page`, `rfc_contacted`) VALUES (?, ?, 0);");
 				$insertId->bind_param("ss",$rfcid,$page);
 				$insertId->execute();
 				$insertId->close();
