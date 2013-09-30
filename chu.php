@@ -102,9 +102,9 @@ class chu {
 			$pg = $wiki->page($page);
 			$x = $pg->edit($header.$requeststokeep, $this->editsum($donerequestcount,$notdonerequestcount,$done,$notdone),true);
 			//$x = $wiki->edit($page,$header.$requeststokeep,$this->editsum($donerequestcount,$notdonerequestcount,$done,$notdone),true);
-			if (!$x) {
-				die("Error editing $page\n");
-			}
+			//if (!$x) {
+			//	die("Error editing $page\n");
+			//}
 			if ($donerequestcount > 0) {
 				$this->archive($done,$donerequests,$donerequestcount);
 			}
