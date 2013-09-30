@@ -99,7 +99,7 @@ class chu {
 			$i++;
 		}
 		if ($header.$requeststokeep != $oldcontent) {
-			$pg = new MediawikiPage($wiki, $page);
+			$pg = $wiki->page($page);
 			$x = $pg->edit($header.$requeststokeep, $this->editsum($donerequestcount,$notdonerequestcount,$done,$notdone),true);
 			//$x = $wiki->edit($page,$header.$requeststokeep,$this->editsum($donerequestcount,$notdonerequestcount,$done,$notdone),true);
 			if (!$x) {
