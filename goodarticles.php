@@ -765,7 +765,7 @@ foreach ($lines as $line) {
 		$subcat = null;
 	}
 }
-
+$AssumeHTTPFailuresAreJustTimeoutsAndShouldBeSuppressed = true; // Lulz
 $wiki->edit("Wikipedia:Good article nominations",$newpage,$editsummary->generate(),false,true);
 
 $newpage2 = explode('<!-- EVERYTHING BELOW THIS COMMENT IS UPDATED AUTOMATICALLY BY A BOT -->',$newpage2);

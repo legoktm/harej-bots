@@ -41,6 +41,12 @@
  */
 
 /**
+ * Global hacks :<
+ * @author Legoktm
+ */
+$AssumeHTTPFailuresAreJustTimeoutsAndShouldBeSuppressed = false;
+
+/**
  * This class is designed to provide a simplified interface to cURL which maintains cookies.
  * @author Cobi
  **/
@@ -205,11 +211,15 @@ class wikipedia {
      * @throws Exception on HTTP errors
      **/
     function query ($query,$post=null,$repeat=0) {
+	    global $AssumeHTTPFailuresAreJustTimeoutsAndShouldBeSuppressed;
         if ($post==null) {
             $ret = $this->http->get($this->url.$query);
         } else {
             $ret = $this->http->post($this->url.$query,$post);
         }
+	    if ($this->http->http_code() == "504" && $AssumeHTTPFailuresAreJustTimeoutsAndShouldBeSuppressed) {
+			return array(); // Meh
+	    }
 		if ($this->http->http_code() != "200") {
 			if ($repeat < 10) {
 				return $this->query($query,$post,++$repeat);
