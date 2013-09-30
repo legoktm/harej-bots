@@ -286,13 +286,21 @@ class GANom {
 			}
 		}
 	}
+
+	public function existsThingyGahhh() {
+		if ( $this->status === "new" ) {
+			return '';
+		} else {
+			return '|exists=yes';
+		}
+	}
 	
 	public function miniWikiCode () {
-		return "# {{GANentry|1=" . $this->article . "|2=" . $this->reviewpage . "}}";
+		return "# {{GANentry|1=" . $this->article . "|2=" . $this->reviewpage;
 	}
 	
 	public function wikicode () {
-		$code = "# {{GANentry|1=" . $this->article . "|2=" . $this->reviewpage . "}} " . $this->numOfReviews($this->nominator_plain) . $this->nominator . " " . $this->timestamp . "\n";
+		$code = "# {{GANentry|1=" . $this->article . "|2=" . $this->reviewpage . $this->existsThingyGahhh() . "}} " . $this->numOfReviews($this->nominator_plain) . $this->nominator . " " . $this->timestamp . "\n";
 		if ($this->status == "on hold") {
 			$code .= "#:{{GAReview|status=on hold}} " . $this->numOfReviews($this->reviewer) . $this->reviewerRaw . "\n";
 		} elseif ($this->status == '2nd opinion') {
