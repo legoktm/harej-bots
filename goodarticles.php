@@ -164,9 +164,9 @@ class editsummary {
 }
 
 class GANom {
-	private $unixtime, $timestamp, $reviewpage, $subtopic, $status, $nominator, $note, $article, $valid_statuses, $reviewer, $reviewerRaw, $wiki;
+	private $unixtime, $timestamp, $reviewpage, $subtopic, $status, $nominator, $note, $article, $valid_statuses, $reviewer, $reviewerRaw;
 	
-	public function __construct ( $article, $template=null, $wiki ) {
+	public function __construct ( $article, $template=null ) {
 		$this->unixtime = time();
 		$this->timestamp = "Error parsing timestamp.";
 		$this->reviewpage = false;
@@ -179,7 +179,6 @@ class GANom {
 		$this->nominator_plain = 'Example';
 		$this->note = false;
 		$this->article = trim($article);
-		$this->wiki = $wiki;
 		
 		if ($template != null) {
 			$this->parseTemplate($template);
@@ -289,20 +288,11 @@ class GANom {
 	}
 	
 	public function miniWikiCode () {
-		return "# {{GANentry|1=" . $this->article . "|2=" . $this->reviewpage;
-	}
-
-	public function reviewpagethingyexists() {
-		$page = 'Talk:' . $this->article . '/GA' . $this->reviewpage;
-		if ( $this->wiki->getpage($page) !== false ) {
-			return '';
-		} else {
-			return '|exists=yes';
-		}
+		return "# {{GANentry|1=" . $this->article . "|2=" . $this->reviewpage . "}}";
 	}
 	
 	public function wikicode () {
-		$code = "# {{GANentry|1=" . $this->article . "|2=" . $this->reviewpage . $this->reviewpagethingyexists() . "}} " . $this->numOfReviews($this->nominator_plain) . $this->nominator . " " . $this->timestamp . "\n";
+		$code = "# {{GANentry|1=" . $this->article . "|2=" . $this->reviewpage . "}} " . $this->numOfReviews($this->nominator_plain) . $this->nominator . " " . $this->timestamp . "\n";
 		if ($this->status == "on hold") {
 			$code .= "#:{{GAReview|status=on hold}} " . $this->numOfReviews($this->reviewer) . $this->reviewerRaw . "\n";
 		} elseif ($this->status == '2nd opinion') {
@@ -564,7 +554,7 @@ foreach ($articles as $article) {
 	if ($ganom==null) {
 		continue;
 	}
-	$currentNom = new GANom($title,$ganom,$wiki);
+	$currentNom = new GANom($title,$ganom);
 
 	// TODO: The next block of code, could probably be done better
 	$reviewpage = "Talk:" . $currentNom . "/GA" . $currentNom->getVar('reviewpage');
