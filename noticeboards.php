@@ -94,14 +94,14 @@ $noticeboards = array(
 );
 
 $editboards = array(
-"Content noticeboard" => "Wikipedia:Content noticeboard",
+//"Content noticeboard" => "Wikipedia:Content noticeboard",
 "BLP noticeboard" => "Wikipedia:Biographies of living persons/Noticeboard",
-"Ethnic and religious conflict noticeboard" => "Wikipedia:Administrators' noticeboard/Geopolitical ethnic and religious conflicts",
+//"Ethnic and religious conflict noticeboard" => "Wikipedia:Administrators' noticeboard/Geopolitical ethnic and religious conflicts",
 //"Fiction noticeboard" => "Wikipedia:Fiction/Noticeboard",
 "Fringe theories noticeboard" => "Wikipedia:Fringe theories/Noticeboard",
 "Original research noticeboard" => "Wikipedia:No original research/Noticeboard",
 "Reliable sources noticeboard" => "Wikipedia:Reliable sources/Noticeboard",
-"Notability noticeboard" => "Wikipedia:Notability/Noticeboard",
+//"Notability noticeboard" => "Wikipedia:Notability/Noticeboard",
 "Neutral point of view noticeboard" => "Wikipedia:Neutral point of view/Noticeboard",
 "External Links noticeboard" => "Wikipedia:External links/Noticeboard",
 "Conflict of interest noticeboard" => "Wikipedia:Conflict of interest/Noticeboard",
@@ -110,12 +110,13 @@ $editboards = array(
 );
 
 $assistboards = array(
-"New user help" => "Wikipedia:New contributors' help page/questions",
+//"New user help" => "Wikipedia:New contributors' help page/questions",
 "Editor assistance" => "Wikipedia:Editor assistance/Requests",
 "Help desk" => "Wikipedia:Help desk",
-"Requests for feedback" => "Wikipedia:Requests for feedback",
-"Drawing board" => "Wikipedia:Drawing board",
-"Media copyright questions" => "Wikipedia:Media copyright questions"
+//"Requests for feedback" => "Wikipedia:Requests for feedback",
+//"Drawing board" => "Wikipedia:Drawing board",
+"Media copyright questions" => "Wikipedia:Media copyright questions",
+"The Teahouse" => "Wikipedia:Teahouse/Questions"
 );
 
 
