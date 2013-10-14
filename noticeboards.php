@@ -53,8 +53,11 @@ function nbprocess ($pagearray, $color, $submissionpage) {
 		}
 		
 		unset($raw);
-		$sections = array_reverse($sections); // i put my thang down, flip it, and reverse it
-		
+
+		if ( $topic !== "The Teahouse" ) { // the teahouse is backwards
+			$sections = array_reverse($sections); // i put my thang down, flip it, and reverse it
+		}
+
 		$listing = "";
 		
 		for ($i = 0; $i < count($sections); $i++) {
