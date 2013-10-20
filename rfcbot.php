@@ -508,7 +508,7 @@ foreach ($frs_users as $username => $extra) {
 		$thirtydays = time() - 2592000;
 		$timestamp = date('YmdHis',$thirtydays);
 		$editsIn30Days='';
-		$recentEdits = $enwikidb->prepare("SELECT count(rev_id) FROM revision WHERE rev_user=? AND rev_timestamp  > ?;");
+		$recentEdits = $enwikidb->prepare("SELECT count(rev_id) FROM revision_userindex WHERE rev_user=? AND rev_timestamp  > ?;");
 		$recentEdits->bind_param("ii",$userid,$timestamp);
 		$recentEdits->execute();
 		$recentEdits->bind_result($editsIn30Days);
