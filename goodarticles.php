@@ -483,6 +483,11 @@ foreach ($x as $y) {
 	$gaStats[] = array($m[1],$n[1]);
 }
 
+// Load users that don't want messages sent on their behalf
+$raw = $wiki->getpage("User:GA bot/Don't notify users for me");
+preg_match_all('/\[\[User:(.+)\]\]/i', $raw, $m);
+$dontNotify = $m[1];
+
 // This looks for transclusions of the GA nominee template, with some filtering done to restrict the list to the talk namespace.
 // TODO: This filtering should be done at an API level
 
@@ -587,7 +592,10 @@ foreach ($articles as $article) {
 			// Notify the nom that the page is now on review
 			$noms_talk_page = $wiki2->page("User talk:" . $currentNom->getVar('nominator_plain'));
 			$noms_talk_page->resolveRedirects();
-			if (substr($noms_talk_page,0,strlen("User talk"))=="User talk" && !preg_match('/\[\[' . preg_quote($currentNom,'/') . '\]\].+?' . preg_quote('<!-- Template:GANotice -->','/') . '/',$noms_talk_page->content())) {
+			if (substr($noms_talk_page,0,strlen("User talk"))=="User talk"
+				&& !preg_match('/\[\[' . preg_quote($currentNom,'/') . '\]\].+?' . preg_quote('<!-- Template:GANotice -->','/') . '/',$noms_talk_page->content())
+				&& !in_array( $currentNom->getVar('reviewer'), $dontNotify )
+			) {
 				$sig = $currentNom->getVar('reviewer');
 				$sig2 = "-- {{subst:user0|User=$sig}} ~~~~~";
 				$msg = "{{subst:GANotice|article=$currentNom|days=7}} <small>Message delivered by [[User:$botuser|$botuser]], on behalf of [[User:$sig|$sig]]</small> $sig2";
@@ -649,7 +657,10 @@ foreach ($articles as $article) {
 			
 			$noms_talk_page = $wiki2->page("User talk:" . $currentNom->getVar('nominator_plain'));
 			$noms_talk_page->resolveRedirects();
-			if (substr($noms_talk_page,0,strlen("User talk"))=="User talk" && !preg_match('/\[\[' . preg_quote($currentNom,'/') . '\]\].+?' . preg_quote('<!-- Template:GANotice result=hold -->','/') . '/',$noms_talk_page->content())) {
+			if (substr($noms_talk_page,0,strlen("User talk"))=="User talk"
+				&& !preg_match('/\[\[' . preg_quote($currentNom,'/') . '\]\].+?' . preg_quote('<!-- Template:GANotice result=hold -->','/') . '/',$noms_talk_page->content())
+				&& !in_array( $currentNom->getVar('reviewer'), $dontNotify )
+			) {
 				$sig = $currentNom->getVar('reviewer');
 				$sig2 = "-- {{subst:user0|User=$sig}} ~~~~~";
 				$msg = "{{subst:GANotice|article=$currentNom|result=hold}} <small>Message delivered by [[User:$botuser|$botuser]], on behalf of [[User:$sig|$sig]]</small> $sig2";
@@ -689,7 +700,10 @@ while ($row = $selectQuery->fetch()) {
 		
 		$noms_talk_page = $wiki2->page("User talk:" . $row['nominator']);
 		$noms_talk_page->resolveRedirects();
-		if (substr($noms_talk_page,0,strlen("User talk"))=="User talk" && !preg_match('/\[\[' . preg_quote($row['page'],'/') . '\]\].+?' . preg_quote('<!-- Template:GANotice result=pass -->','/') . '/',$noms_talk_page->content())) {
+		if (substr($noms_talk_page,0,strlen("User talk"))=="User talk"
+			&& !preg_match('/\[\[' . preg_quote($row['page'],'/') . '\]\].+?' . preg_quote('<!-- Template:GANotice result=pass -->','/') . '/',$noms_talk_page->content())
+			&& !in_array( $row['reviewerplain'], $dontNotify )
+		) {
 			$sig = $row['reviewerplain'];
 			$sig2 = "-- {{subst:user0|User=$sig}} ~~~~~";
 			$msg = "{{subst:GANotice|article=".$row['page']."|result=pass}} <small>Message delivered by [[User:$botuser|$botuser]], on behalf of [[User:$sig|$sig]]</small> $sig2";
@@ -703,7 +717,10 @@ while ($row = $selectQuery->fetch()) {
 		
 		$noms_talk_page = $wiki2->page("User talk:" . $row['nominator']);
 		$noms_talk_page->resolveRedirects();
-		if (substr($noms_talk_page,0,strlen("User talk"))=="User talk" && !preg_match('/\[\[' . preg_quote($row['page'],'/') . '\]\].+?' . preg_quote('<!-- Template:GANotice result=fail -->','/') . '/',$noms_talk_page->content())) {
+		if (substr($noms_talk_page,0,strlen("User talk"))=="User talk"
+			&& !preg_match('/\[\[' . preg_quote($row['page'],'/') . '\]\].+?' . preg_quote('<!-- Template:GANotice result=fail -->','/') . '/',$noms_talk_page->content())
+			&& !in_array( $row['reviewerplain'], $dontNotify )
+		) {
 			$sig = $row['reviewerplain'];
 			$sig2 = "-- {{subst:user0|User=$sig}} ~~~~~";
 			$msg = "{{subst:GANotice|article=".$row['page']."|result=fail}} <small>Message delivered by [[User:$botuser|$botuser]], on behalf of [[User:$sig|$sig]]</small> $sig2";
