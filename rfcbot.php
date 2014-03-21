@@ -101,12 +101,12 @@ $RFC_pagetitles = array(
 "unsorted"	=> "Wikipedia:Requests for comment/Unsorted",
 );
 
-$toolserver_mycnf = parse_ini_file("/data/project/legobot/.my.cnf");
+$toolserver_mycnf = parse_ini_file("/data/project/legobot/replica.my.cnf");
 $toolserver_username = $toolserver_mycnf['user'];
 $toolserver_password = $toolserver_mycnf['password'];
 
 echo "Connecting to tools-db\n";
-$rfcdb = new mysqli('tools-db',$toolserver_username,$toolserver_password,'locallegobot');
+$rfcdb = new mysqli('tools-db',$toolserver_username,$toolserver_password,'s51043__legobot');
 if(mysqli_connect_errno()) {
 	echo "Connection Failed: " . mysqli_connect_errno();
 	die();

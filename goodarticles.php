@@ -29,7 +29,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 date_default_timezone_set('UTC');
 
 $botuser = 'Legobot';
-$databasename = 'locallegobot';
+$databasename = 's51043__legobot';
 require_once 'botclasses.php';
 require_once 'harejpass.php';
 
@@ -455,7 +455,7 @@ $http = new http();
 
 /* Connect to the database */
 echo "Retrieving database login credentials...";
-$toolserver_mycnf = parse_ini_file("/data/project/legobot/.my.cnf");
+$toolserver_mycnf = parse_ini_file("/data/project/legobot/replica.my.cnf");
 $toolserver_username = $toolserver_mycnf['user'];
 $toolserver_password = $toolserver_mycnf['password'];
 unset($toolserver_mycnf);
