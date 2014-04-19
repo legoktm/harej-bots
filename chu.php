@@ -209,7 +209,7 @@ class chu {
 				
 				$sulapi = $wiki->query('?action=query&meta=globaluserinfo&guiprop=merged|unattached&guiuser='.urlencode($to));
 				print_r($sulapi);
-				$url = "<span class=\"plainlinks\">[http://toolserver.org/~quentinv57/tools/sulinfo.php?username=".urlencode($to)." $to]</span>";
+				$url = "[[sulutil:{$to}|{$to}]]";
 				if (!empty($sulapi['query']['globaluserinfo']['merged'])) {
 					$count_unattached = count($sulapi['query']['globaluserinfo']['unattached']);
 					
