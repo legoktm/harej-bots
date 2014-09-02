@@ -274,7 +274,7 @@ class chu {
 	}
 	
 	protected function alreadyrenamed ($request) {
-		global $wiki;
+		global $wiki, $metawiki;
 		if (preg_match('/\{\{(not\s?|already\s?)?done\}\}/i',$request)) {
 			return $request;
 		}
@@ -292,6 +292,24 @@ class chu {
 					}
 					$request = $request.$text_to_add;
 					$this->sumclerk = true;
+				}
+			} else {
+				// try checking global renames
+				$y = $metawiki->query('?action=query&list=logevents&leaction=gblrename/rename&letitle=Special:CentralAuth/'.urlencode($m[2]));
+				if (isset($y['query']['logevents'][0]['user'])) {
+					if ($y['query']['logevents'][0]['newuser']==trim(ucfirst(str_replace('_',' ',$m[2]))) or preg_match('/'.preg_quote(trim(ucfirst(str_replace('_',' ',$m[2]))),'/').'/i',$y['query']['logevents'][0]['comment'])) {
+						$tstamp = strtotime(str_replace(array('T','Z'),' ',$y['query']['logevents'][0]['timestamp']));
+						if ((time()-$tstamp) < 600) {
+							return $request;
+						}
+						$text_to_add = ":{{done}} globally by [[m:User:".$y['query']['logevents'][0]['user']."|]] --~~~~\r\n";
+						if (!preg_match("/\n$/",$request)) {
+							$text_to_add = "\r\n".$text_to_add;
+						}
+						$request = $request.$text_to_add;
+						$this->sumclerk = true;
+					}
+
 				}
 			}
 		}
@@ -453,6 +471,7 @@ require_once 'new_mediawiki.php';
 $user = 'Legobot';
 require_once 'harejpass.php';
 $wiki = new mediawiki($user,$botpass);
+$metawiki = new mediawiki($user,$botpass, 'http://meta.wikimedia.org/w/api.php');
 $page = trim(strtolower($wiki->getpage("User:$user/clerk")));
 if ($page=='true') {
 	$chu = new chu('Wikipedia:Changing username/Simple',true);
