@@ -2,10 +2,9 @@
 """
 
 noticeboards.py -- Maintains a listing of noticeboard topics
-Version 2.0a
 
 (c) 2010 James Hare - https://en.wikipedia.org/wiki/User:Harej
-(c) 2015 Kunal Mehta - https://www.mediawiki.org/wiki/User;Legoktm
+(c) 2015 Kunal Mehta - https://www.mediawiki.org/wiki/User:Legoktm
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,15 +21,17 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 Developers (add your self here if you worked on the code):
-  James Hare - [[User:Harej]] - Wrote everything
+  James Hare - [[User:Harej]] - Wrote initial version
   Kunal Mehta - [[User:Legoktm]] - Ported to Python
 
 """
+
 
 from collections import OrderedDict
 import pywikibot
 from pywikibot.data import api
 from urllib.parse import quote
+
 
 site = pywikibot.Site('en', 'wikipedia')
 
@@ -40,7 +41,7 @@ def parse_sections(page_title):
     return req.submit()
 
 
-def process_boards(boards, color, save_page):
+def process_boards(boards, save_page):
     noticeboard_listing = ''
 
     for topic, page_title in boards.items():
@@ -50,27 +51,27 @@ def process_boards(boards, color, save_page):
             if section['level'] == '2':
                 found_sections.append(section['line'])
 
-        if topic != 'The Teahouse':  # teahouse is backwards
-            found_sections.reverse()  # i put my thang down, flip it, and reverse it
+        if topic != 'The Teahouse':  # Teahouse posts are in reverse order.
+            found_sections.reverse()  # I put my thang down, flip it, and reverse it.
 
         header_listing = ''
-        listing = ''
+        listing = '<div style="padding-left:3em;">'
         for count, section in enumerate(found_sections):
             link = quote(section.replace(' ', '_'), safe='')
             for replacement in ['{{', '}}', '[[', ']]', '~~~~']:
                 section = section.replace(replacement, '<nowiki>%s</nowiki>' % replacement)
             if count < 3:
-                header_listing += ' — [[{page}#{link}|{section}]]'.format(page=page_title, link=link, section=section)
+                header_listing += '* [[{page}#{link}|{section}]]\n'.format(page=page_title, link=link, section=section)
             else:
-                listing += '[[{page_title}#{link}|{section}]] &mdash; '.format(
+                listing += '* [[{page_title}#{link}|{section}]]\n'.format(
                     page_title=page_title,
                     link=link,
                     section=section
                 )
-
-        noticeboard_listing += '{{' + "User:Harej/coordcollapsetop|c={color}|'''[[{page}|{topic}]]''' ({count})<br />" \
-                                      "<small>Most recent sections {header_listing}".format(
-                                          color=color,
+        listing += '</div>'
+        header_listing += '</div>' # Wrapping up div started below.
+        noticeboard_listing += '{{' + "Dashboard grouping|1='''[[{page}|{topic}]]''' ({count} threads)<br />" \
+                                      "<div style='font-size:85%; padding-left:1.5em;'>''Most recent:''\n{header_listing}".format(
                                           page=page_title,
                                           topic=topic,
                                           count=len(found_sections),
@@ -94,7 +95,7 @@ if __name__ == '__main__':
         ("Arbitration Enforcement noticeboard", "Wikipedia:Arbitration/Requests/Enforcement"),
         # ("Wikiquette alerts", "Wikipedia:Wikiquette alerts"),
 
-    ]), '#FFCECE', 'Wikipedia:Dashboard/Administrative noticeboards')
+    ]), 'Wikipedia:Dashboard/Administrative noticeboards')
     process_boards(OrderedDict([
         # ("Content noticeboard", "Wikipedia:Content noticeboard"),
         ("BLP noticeboard", "Wikipedia:Biographies of living persons/Noticeboard"),
@@ -110,7 +111,7 @@ if __name__ == '__main__':
         ("Conflict of interest noticeboard", "Wikipedia:Conflict of interest/Noticeboard"),
         ("Non-free content review", "Wikipedia:Non-free content review"),
         ("Dispute resolution noticeboard", "Wikipedia:Dispute resolution noticeboard"),
-    ]), '#D1FFB3', 'Wikipedia:Dashboard/Editorial noticeboards')
+    ]), 'Wikipedia:Dashboard/Editorial noticeboards')
 
     process_boards(OrderedDict([
         # ("New user help", "Wikipedia:New contributors' help page/questions"),
@@ -121,7 +122,7 @@ if __name__ == '__main__':
         ("Media copyright questions", "Wikipedia:Media copyright questions"),
         ("The Teahouse", "Wikipedia:Teahouse/Questions"),
 
-    ]), '#CEFFFD', 'Wikipedia:Dashboard/Help noticeboards')
+    ]), 'Wikipedia:Dashboard/Help noticeboards')
 
     process_boards(OrderedDict([
         ('Village Pump (policy)', 'Wikipedia:Village pump (policy)'),
@@ -129,4 +130,4 @@ if __name__ == '__main__':
         ('Village Pump (proposals)', 'Wikipedia:Village pump (proposals)'),
         ('Village Pump (idea lab)', 'Wikipedia:Village pump (idea lab)'),
         ('Village Pump (miscellaneous)', 'Wikipedia:Village pump (miscellaneous)')
-    ]), '#FFFFB5', 'Wikipedia:Dashboard/Village pump')
+    ]), 'Wikipedia:Dashboard/Village pump')
