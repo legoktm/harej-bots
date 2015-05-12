@@ -55,7 +55,7 @@ def process_boards(boards, save_page):
             found_sections.reverse()  # I put my thang down, flip it, and reverse it.
 
         header_listing = ''
-        listing = '<div style="padding-left:3em;">'
+        listing = '<div style="padding-left:3em;">\n'
         for count, section in enumerate(found_sections):
             link = quote(section.replace(' ', '_'), safe='')
             for replacement in ['{{', '}}', '[[', ']]', '~~~~']:
