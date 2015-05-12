@@ -69,9 +69,10 @@ def process_boards(boards, save_page):
                     section=section
                 )
         listing += '</div>'
-        header_listing += '</div>' # Wrapping up div started below.
+        header_listing += '</div>'  # Wrapping up div started below.
         noticeboard_listing += '{{' + "Dashboard grouping|1='''[[{page}|{topic}]]''' ({count} threads)<br />" \
-                                      "<div style='font-size:85%; padding-left:1.5em;'>''Most recent:''\n{header_listing}".format(
+                                      "<div style='font-size:85%; padding-left:1.5em;'>" \
+                                      "''Most recent:''\n{header_listing}".format(
                                           page=page_title,
                                           topic=topic,
                                           count=len(found_sections),
