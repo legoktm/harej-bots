@@ -143,7 +143,8 @@ class mediawiki {
 					'action' => 'query',
 					'list' => 'embeddedin',
 					'eititle' => $page,
-					'eilimit' => 500
+					'eilimit' => 500,
+					'rawcontinue' => 1,
 				);
 				
 			if ($continue != '')

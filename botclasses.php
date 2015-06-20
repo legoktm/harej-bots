@@ -280,7 +280,7 @@ class wikipedia {
      * @return array
      **/
     function categorymembers ($category,$subcat=false) {
-        $continue = '';
+        $continue = '&rawcontinue=';
         $pages = array();
         while (true) {
             $res = $this->query('?action=query&list=categorymembers&cmtitle='.urlencode($category).'&format=php&cmlimit=500'.$continue);
@@ -301,7 +301,7 @@ class wikipedia {
                 }
                 return $pages;
             } else {
-                $continue = '&cmcontinue='.urlencode($res['query-continue']['categorymembers']['cmcontinue']);
+                $continue = '&rawcontinue=&cmcontinue='.urlencode($res['query-continue']['categorymembers']['cmcontinue']);
             }
         }
     }
@@ -313,7 +313,7 @@ class wikipedia {
      * @return array
      **/
     function whatlinkshere ($page,$extra=null) {
-        $continue = '';
+        $continue = '&rawcontinue=';
         $pages = array();
         while (true) {
             $res = $this->query('?action=query&list=backlinks&bltitle='.urlencode($page).'&bllimit=500&format=php'.$continue.$extra);
@@ -326,7 +326,7 @@ class wikipedia {
             if (empty($res['query-continue']['backlinks']['blcontinue'])) {
                 return $pages;
             } else {
-                $continue = '&blcontinue='.urlencode($res['query-continue']['backlinks']['blcontinue']);
+                $continue = '&rawcontinue=&blcontinue='.urlencode($res['query-continue']['backlinks']['blcontinue']);
             }
         }
     }
@@ -338,7 +338,7 @@ class wikipedia {
     * @return array
     **/
     function whereisincluded ($image,$extre=null) {
-        $continue = '';
+        $continue = '&rawcontinue=';
         $pages = array();
         while (true) {
             $res = $this->query('?action=query&list=imageusage&iutitle='.urlencode($image).'&iulimit=500&format=php'.$continue.$extra);
@@ -350,7 +350,7 @@ class wikipedia {
             if (empty($res['query-continue']['imageusage']['iucontinue']))
                 return $pages;
             else
-                $continue = '&iucontinue='.urlencode($res['query-continue']['imageusage']['iucontinue']);
+                $continue = '&rawcontinue=&iucontinue='.urlencode($res['query-continue']['imageusage']['iucontinue']);
         }
     }
     
@@ -361,7 +361,7 @@ class wikipedia {
     * @return array
     **/
     function whatusethetemplate ($template,$extra=null) {
-        $continue = '';
+        $continue = '&rawcontinue=';
         $pages = array();
         while (true) {
             $res = $this->query('?action=query&list=embeddedin&eititle=Template:'.urlencode($template).'&eilimit=500&format=php'.$continue.$extra);
@@ -374,7 +374,7 @@ class wikipedia {
             if (empty($res['query-continue']['embeddedin']['eicontinue'])) {
                 return $pages;
             } else {
-                $continue = '&eicontinue='.urlencode($res['query-continue']['embeddedin']['eicontinue']);
+                $continue = '&rawcontinue=&eicontinue='.urlencode($res['query-continue']['embeddedin']['eicontinue']);
             }
          }
      }
@@ -393,7 +393,7 @@ class wikipedia {
         $temp = explode(':',$page,2);
         $namespace = $namespaces[$temp[0]];
         $title = $temp[1];
-        $continue = '';
+        $continue = '&rawcontinue=';
         $subpages = array();
         while (true) {
             $res = $this->query('?action=query&format=php&list=allpages&apprefix='.urlencode($title).'&aplimit=500&apnamespace='.$namespace.$continue);
@@ -406,7 +406,7 @@ class wikipedia {
             if (empty($res['query-continue']['allpages']['apfrom'])) {
                 return $subpages;
             } else {
-                $continue = '&apfrom='.urlencode($res['query-continue']['allpages']['apfrom']);
+                $continue = '&rawcontinue=&apfrom='.urlencode($res['query-continue']['allpages']['apfrom']);
             }
         }
     }
@@ -514,7 +514,7 @@ class wikipedia {
      * @return array.
      **/
     function getTransclusions($page,$sleep=null,$extra=null) {
-        $continue = '';
+        $continue = '&rawcontinue=';
         $pages = array();
         while (true) {
             $ret = $this->query('?action=query&list=embeddedin&eititle='.urlencode($page).$continue.$extra.'&eilimit=500&format=php');
@@ -525,7 +525,7 @@ class wikipedia {
                 $pages[] = $x['title'];
             }
             if (isset($ret['query-continue']['embeddedin']['eicontinue'])) {
-                $continue = '&eicontinue='.$ret['query-continue']['embeddedin']['eicontinue'];
+                $continue = '&rawcontinue=&eicontinue='.$ret['query-continue']['embeddedin']['eicontinue'];
             } else {
                 return $pages;
             }

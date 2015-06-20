@@ -432,7 +432,7 @@ class chu {
 	
 	protected function getarchive ($page) {
 		global $wiki;
-		$continue = null;
+		$continue = '&rawcontinue=';
 		$number = 0;
 		while (true) {
 			$x = $wiki->query('?action=query&list=allpages&apprefix='.urlencode($page).'&apfilterredir=nonredirects&aplimit=500&apnamespace=4'.$continue);
@@ -444,7 +444,7 @@ class chu {
 				}
 			}
 			if (isset($x['query-continue']['allpages']['apfrom'])) {
-				$continue = '&apfrom='.urldecode($x['query-continue']['allpages']['apfrom']);
+				$continue = '&rawcontinue=&apfrom='.urldecode($x['query-continue']['allpages']['apfrom']);
 			} else {
 				break;
 			}
