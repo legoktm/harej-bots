@@ -183,7 +183,7 @@ class wikipedia {
      * This is our constructor.
      * @return void
      **/
-    function __construct ($url='http://en.wikipedia.org/w/api.php',$hu=null,$hp=null) {
+    function __construct ($url='https://en.wikipedia.org/w/api.php',$hu=null,$hp=null) {
         $this->http = new http;
         $this->token = null;
         $this->url = $url;

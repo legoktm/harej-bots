@@ -15,7 +15,7 @@ class mediawiki {
 	 * @param string (default=null) $password  - The account's password.
 	 * @param int (default=0) $maxlag - The maxlag level to use when making an edit.
 	 */
-	public function __construct ( $username = null, $password = null, $url = 'http://en.wikipedia.org/w/api.php', $maxlag = 0 ) {
+	public function __construct ( $username = null, $password = null, $url = 'https://en.wikipedia.org/w/api.php', $maxlag = 0 ) {
 		$this->http = new http();
 		$this->http->useragent = 'PHP Mediawiki Client';
 		

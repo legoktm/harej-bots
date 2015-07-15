@@ -181,7 +181,7 @@ class chu {
 				$ret = $db_enwiki->query('select user_name,user_editcount from user where user_name="'.$db_enwiki->escape(str_replace('_',' ',$to)).'";');
 				$x = mysql_fetch_assoc($ret);
 				if (str_replace('_',' ',$to) == $x['user_name']) {
-					$url = '<span class="plainlinks">[http://en.wikipedia.org/w/index.php?title=Special:ListUsers&username='.urlencode($to).'&limit=1&offset=0 Special:Listusers]</span>';
+					$url = '<span class="plainlinks">[https://en.wikipedia.org/w/index.php?title=Special:ListUsers&username='.urlencode($to).'&limit=1&offset=0 Special:Listusers]</span>';
 					if ($x['user_editcount'] > 0) {
 						$problems[] = "The requested username is already registered; see $url. Please choose another name that does not appear on that list.";
 					} else {
@@ -471,7 +471,7 @@ require_once 'new_mediawiki.php';
 $user = 'Legobot';
 require_once 'harejpass.php';
 $wiki = new mediawiki($user,$botpass);
-$metawiki = new mediawiki($user,$botpass, 'http://meta.wikimedia.org/w/api.php');
+$metawiki = new mediawiki($user,$botpass, 'https://meta.wikimedia.org/w/api.php');
 $page = trim(strtolower($wiki->getpage("User:$user/clerk")));
 if ($page=='true') {
 	$chu = new chu('Wikipedia:Changing username/Simple',true);
