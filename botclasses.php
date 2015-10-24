@@ -307,6 +307,16 @@ class wikipedia {
     }
 
     /**
+     * Returns the number of pages in a category
+     * @param $category The category to use (including prefix)
+     * @return integer
+     **/
+    function categorypagecount ($category) {
+        $res = $this->query('?action=query&format=php&titles='.urlencode($category).'&prop=categoryinfo&formatversion=2');
+        return $res['query']['pages'][0]['categoryinfo']['pages'];
+    }
+
+    /**
      * Returns a list of pages that link to $page.
      * @param $page
      * @param $extra (defaults to null)
