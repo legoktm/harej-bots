@@ -115,13 +115,8 @@ class mediawiki {
 	public function getedittoken ($force = false) {
 		if ( $this->edittoken != null && $force == false )
 			return $this->edittoken;
-		$x = $this->query( array('action' => 'query', 'prop' => 'info', 'intoken' => 'edit', 'titles' => 'Main Page' ) );
-		@$id = key( $x['query']['pages'] );
-		if ( isset( $x['query']['pages'][$id]['edittoken'] ) )
-			return $x['query']['pages'][$id]['edittoken'];
-
-		$this->lasterror = 'notoken';
-		return false;
+		$x = $this->query( array('action' => 'query', 'meta' => 'tokens' ) );
+		return $x['query']['tokens']['csrftoken'];
 	}
 
 }

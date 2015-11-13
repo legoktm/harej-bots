@@ -484,10 +484,8 @@ class wikipedia {
      * @return string edit token.
      **/
     function getedittoken() {
-        $x = $this->query('?action=query&prop=info&intoken=edit&titles=Main%20Page&format=json');
-        foreach ($x['query']['pages'] as $ret) {
-            return $ret['edittoken'];
-        }
+        $x = $this->query('?action=query&meta=tokens&format=json');
+        return $x['query']['tokens']['csrftoken'];
     }
 
     /**
