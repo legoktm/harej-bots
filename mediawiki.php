@@ -54,11 +54,11 @@ class mediawiki {
 			$data = $this->http->get($this->url . $query);
 		else
 			$data = $this->http->post($this->url . $query, $post);
-		return unserialize($data);
+		return json_decode($data, true);
 	}
 
 	protected function queryString ($query) {
-		$return = "?format=php";
+		$return = "?format=json";
 		foreach ($query as $key => $value) {
 			$return .=  "&" . urlencode($key) . "=" . urlencode($value);
 		}
