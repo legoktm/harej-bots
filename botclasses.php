@@ -27,17 +27,17 @@
  *      Cobi    - [[User:Cobi]]         - Wrote the http class and some of the wikipedia class
  *      Chris   - [[User:Chris_G]]      - Wrote the most of the wikipedia class
  *      Fale    - [[User:Fale]]         - Polish, wrote the extended and some of the wikipedia class
- *      Kaldari - [[User:Kaldari]]      - Submitted a patch for the imagematches function
+ *      Kaldari - [[User:Kaldari]]      - Wrote wikipedia->imagematches() and wikipedia->categorypagecount()
  *      Gutza   - [[User:Gutza]]        - Submitted a patch for http->setHTTPcreds(), and http->quiet
  *      Sean    - [[User:SColombo]]     - Wrote the lyricwiki class (now moved to lyricswiki.php)
- *      Brain   - [[User:Brian_McNeil]] - Wrote wikipedia->getfileuploader() and wikipedia->getfilelocation
+ *      Brain   - [[User:Brian_McNeil]] - Wrote wikipedia->getfileuploader() and wikipedia->getfilelocation()
  **/
 
 /*
  * Forks/Alternative versions:
  * There's a couple of different versions of this code lying around.
  * I'll try to list them here for reference purpopses:
- * 		https://en.wikinews.org/wiki/User:NewsieBot/botclasses.php
+ *     https://en.wikinews.org/wiki/User:NewsieBot/botclasses.php
  */
 
 /**
@@ -58,9 +58,9 @@ class http {
     public $getfollowredirs;
     public $quiet=false;
 
-	public function http_code () {
-		return curl_getinfo( $this->ch, CURLINFO_HTTP_CODE );
-	}
+    public function http_code () {
+        return curl_getinfo( $this->ch, CURLINFO_HTTP_CODE );
+    }
 
     function data_encode ($data, $keyprefix = "", $keypostfix = "") {
         assert( is_array($data) );
@@ -108,18 +108,18 @@ class http {
         curl_setopt($this->ch,CURLOPT_TIMEOUT,30);
         curl_setopt($this->ch,CURLOPT_CONNECTTIMEOUT,10);
         curl_setopt($this->ch,CURLOPT_POST,1);
-//      curl_setopt($this->ch,CURLOPT_FAILONERROR,1);
-//	curl_setopt($this->ch,CURLOPT_POSTFIELDS, substr($this->data_encode($data), 0, -1) );
+        //curl_setopt($this->ch,CURLOPT_FAILONERROR,1);
+        //curl_setopt($this->ch,CURLOPT_POSTFIELDS, substr($this->data_encode($data), 0, -1) );
         curl_setopt($this->ch,CURLOPT_POSTFIELDS, $data);
         $data = curl_exec($this->ch);
-//	echo "Error: ".curl_error($this->ch);
-//	var_dump($data);
-//	global $logfd;
-//	if (!is_resource($logfd)) {
-//		$logfd = fopen('php://stderr','w');
-	if (!$this->quiet)
+        //echo "Error: ".curl_error($this->ch);
+        //var_dump($data);
+        //global $logfd;
+        //if (!is_resource($logfd)) {
+        //$logfd = fopen('php://stderr','w');
+        if (!$this->quiet)
             echo 'POST: '.$url.' ('.(microtime(1) - $time).' s) ('.strlen($data)." b)\n";
-// 	}
+        //}
         return $data;
     }
 
@@ -193,13 +193,13 @@ class wikipedia {
     }
 
     function __set($var,$val) {
-	switch($var) {
-  		case 'quiet':
-			$this->http->quiet=$val;
-     			break;
-   		default:
-     			echo "WARNING: Unknown variable ($var)!\n";
- 	}
+        switch($var) {
+            case 'quiet':
+                $this->http->quiet=$val;
+                break;
+            default:
+                echo "WARNING: Unknown variable ($var)!\n";
+        }
     }
 
     /**
@@ -211,23 +211,24 @@ class wikipedia {
      * @throws Exception on HTTP errors
      **/
     function query ($query,$post=null,$repeat=0) {
-	    global $AssumeHTTPFailuresAreJustTimeoutsAndShouldBeSuppressed;
+        global $AssumeHTTPFailuresAreJustTimeoutsAndShouldBeSuppressed;
         if ($post==null) {
             $ret = $this->http->get($this->url.$query);
         } else {
             $ret = $this->http->post($this->url.$query,$post);
         }
-	    if ($this->http->http_code() == "504" && $AssumeHTTPFailuresAreJustTimeoutsAndShouldBeSuppressed) {
-			return array(); // Meh
-	    }
-		if ($this->http->http_code() != "200") {
-			if ($repeat < 10) {
-				return $this->query($query,$post,++$repeat);
-			} else {
-				throw new Exception("HTTP Error.");
-			}
-		}
-        return json_decode($ret, true);
+        if ($this->http->http_code() == "504" && $AssumeHTTPFailuresAreJustTimeoutsAndShouldBeSuppressed) {
+            return array(); // Meh
+        }
+        if ($this->http->http_code() != "200") {
+            // Try 10 times before giving up
+            if ($repeat < 10) {
+                return $this->query($query,$post,++$repeat);
+            } else {
+                throw new Exception("HTTP Error: ".$this->http->http_code());
+            }
+        }
+      return json_decode($ret, true);
     }
 
     /**
@@ -428,12 +429,12 @@ class wikipedia {
      * @return array
      **/
     function login ($user,$pass) {
-    	$post = array('lgname' => $user, 'lgpassword' => $pass);
+        $post = array('lgname' => $user, 'lgpassword' => $pass);
         $ret = $this->query('?action=login&format=json',$post);
         /* This is now required - see https://bugzilla.wikimedia.org/show_bug.cgi?id=23076 */
         if ($ret['login']['result'] == 'NeedToken') {
-        	$post['lgtoken'] = $ret['login']['token'];
-        	$ret = $this->query( '?action=login&format=json', $post );
+            $post['lgtoken'] = $ret['login']['token'];
+            $ret = $this->query( '?action=login&format=json', $post );
         }
         if ($ret['login']['result'] != 'Success') {
             echo "Login error: \n";
@@ -807,11 +808,11 @@ class wikipedia {
     $comment - delete comment
     */
     function revdel ($page,$revs,$comment) {
-    	
+
         if ($this->token==null) {
             $this->token = $this->getedittoken();
         }
-        
+
         $post = array(
             'wpEditToken'       => $this->token,
             'ids' => $revs,
@@ -867,18 +868,19 @@ class wikipedia {
         );
         return $this->query('?action=userrights&format=json',$params);
     }
-	
+
     /**
      * Gets the number of images matching a particular sha1 hash.
+     * Use this function to see if an image already exists on a wiki.
      * @param $hash The sha1 hash for an image.
      * @return The number of images with the same sha1 hash.
      **/
     function imagematches ($hash) {
-		$x = $this->query('?action=query&list=allimages&format=json&aisha1='.$hash);
-		return count($x['query']['allimages']);
+        $x = $this->query('?action=query&list=allimages&format=json&aisha1='.$hash);
+        return count($x['query']['allimages']);
     }
 
-	/**  BMcN 2012-09-16
+    /**  BMcN 2012-09-16
      * Retrieve a media file's actual location.
      * @param $page The "File:" page on the wiki which the URL of is desired.
      * @return The URL pointing directly to the media file (Eg http://upload.mediawiki.org/wikipedia/en/1/1/Example.jpg)
@@ -892,7 +894,7 @@ class wikipedia {
                 return false;
         }
     }
- 
+
     /**  BMcN 2012-09-16
      * Retrieve a media file's uploader.
      * @param $page The "File:" page
@@ -976,5 +978,3 @@ class extended extends wikipedia
            return NULL;
      }    
 }
-
-
