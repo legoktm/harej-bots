@@ -227,7 +227,7 @@ class wikipedia {
 				throw new Exception("HTTP Error.");
 			}
 		}
-        return unserialize($ret);
+        return json_decode($ret, true);
     }
 
     /**
@@ -240,7 +240,7 @@ class wikipedia {
         $append = '';
         if ($revid!=null)
             $append = '&rvstartid='.$revid;
-        $x = $this->query('?action=query&format=php&prop=revisions&titles='.urlencode($page).'&rvlimit=1&rvprop=content|timestamp'.$append);
+        $x = $this->query('?action=query&format=json&prop=revisions&titles='.urlencode($page).'&rvlimit=1&rvprop=content|timestamp'.$append);
         foreach ($x['query']['pages'] as $ret) {
             if (isset($ret['revisions'][0]['*'])) {
                 if ($detectEditConflict)
@@ -257,7 +257,7 @@ class wikipedia {
      * @return The page id of the page.
      **/
     function getpageid ($page) {
-        $x = $this->query('?action=query&format=php&prop=revisions&titles='.urlencode($page).'&rvlimit=1&rvprop=content');
+        $x = $this->query('?action=query&format=json&prop=revisions&titles='.urlencode($page).'&rvlimit=1&rvprop=content');
         foreach ($x['query']['pages'] as $ret) {
             return $ret['pageid'];
         }
@@ -269,7 +269,7 @@ class wikipedia {
      * @return The number of contributions the user has.
      **/
     function contribcount ($user) {
-        $x = $this->query('?action=query&list=allusers&format=php&auprop=editcount&aulimit=1&aufrom='.urlencode($user));
+        $x = $this->query('?action=query&list=allusers&format=json&auprop=editcount&aulimit=1&aufrom='.urlencode($user));
         return $x['query']['allusers'][0]['editcount'];
     }
 
@@ -283,7 +283,7 @@ class wikipedia {
         $continue = '&rawcontinue=';
         $pages = array();
         while (true) {
-            $res = $this->query('?action=query&list=categorymembers&cmtitle='.urlencode($category).'&format=php&cmlimit=500'.$continue);
+            $res = $this->query('?action=query&list=categorymembers&cmtitle='.urlencode($category).'&format=json&cmlimit=500'.$continue);
             if (isset($x['error'])) {
                 return false;
             }
@@ -312,7 +312,7 @@ class wikipedia {
      * @return integer
      **/
     function categorypagecount ($category) {
-        $res = $this->query('?action=query&format=php&titles='.urlencode($category).'&prop=categoryinfo&formatversion=2');
+        $res = $this->query('?action=query&format=json&titles='.urlencode($category).'&prop=categoryinfo&formatversion=2');
         return $res['query']['pages'][0]['categoryinfo']['pages'];
     }
 
@@ -326,7 +326,7 @@ class wikipedia {
         $continue = '&rawcontinue=';
         $pages = array();
         while (true) {
-            $res = $this->query('?action=query&list=backlinks&bltitle='.urlencode($page).'&bllimit=500&format=php'.$continue.$extra);
+            $res = $this->query('?action=query&list=backlinks&bltitle='.urlencode($page).'&bllimit=500&format=json'.$continue.$extra);
             if (isset($res['error'])) {
                 return false;
             }
@@ -351,7 +351,7 @@ class wikipedia {
         $continue = '&rawcontinue=';
         $pages = array();
         while (true) {
-            $res = $this->query('?action=query&list=imageusage&iutitle='.urlencode($image).'&iulimit=500&format=php'.$continue.$extra);
+            $res = $this->query('?action=query&list=imageusage&iutitle='.urlencode($image).'&iulimit=500&format=json'.$continue.$extra);
             if (isset($res['error']))
                 return false;
             foreach ($res['query']['imageusage'] as $x) {
@@ -374,7 +374,7 @@ class wikipedia {
         $continue = '&rawcontinue=';
         $pages = array();
         while (true) {
-            $res = $this->query('?action=query&list=embeddedin&eititle=Template:'.urlencode($template).'&eilimit=500&format=php'.$continue.$extra);
+            $res = $this->query('?action=query&list=embeddedin&eititle=Template:'.urlencode($template).'&eilimit=500&format=json'.$continue.$extra);
             if (isset($res['error'])) {
                 return false;
             }
@@ -396,7 +396,7 @@ class wikipedia {
      **/
     function subpages ($page) {
         /* Calculate all the namespace codes */
-        $ret = $this->query('?action=query&meta=siteinfo&siprop=namespaces&format=php');
+        $ret = $this->query('?action=query&meta=siteinfo&siprop=namespaces&format=json');
         foreach ($ret['query']['namespaces'] as $x) {
             $namespaces[$x['*']] = $x['id'];
         }
@@ -406,7 +406,7 @@ class wikipedia {
         $continue = '&rawcontinue=';
         $subpages = array();
         while (true) {
-            $res = $this->query('?action=query&format=php&list=allpages&apprefix='.urlencode($title).'&aplimit=500&apnamespace='.$namespace.$continue);
+            $res = $this->query('?action=query&format=json&list=allpages&apprefix='.urlencode($title).'&aplimit=500&apnamespace='.$namespace.$continue);
             if (isset($x['error'])) {
                 return false;
             }
@@ -429,11 +429,11 @@ class wikipedia {
      **/
     function login ($user,$pass) {
     	$post = array('lgname' => $user, 'lgpassword' => $pass);
-        $ret = $this->query('?action=login&format=php',$post);
+        $ret = $this->query('?action=login&format=json',$post);
         /* This is now required - see https://bugzilla.wikimedia.org/show_bug.cgi?id=23076 */
         if ($ret['login']['result'] == 'NeedToken') {
         	$post['lgtoken'] = $ret['login']['token'];
-        	$ret = $this->query( '?action=login&format=php', $post );
+        	$ret = $this->query( '?action=login&format=json', $post );
         }
         if ($ret['login']['result'] != 'Success') {
             echo "Login error: \n";
@@ -484,10 +484,8 @@ class wikipedia {
      * @return string edit token.
      **/
     function getedittoken() {
-        $x = $this->query('?action=query&prop=info&intoken=edit&titles=Main%20Page&format=php');
-        foreach ($x['query']['pages'] as $ret) {
-            return $ret['edittoken'];
-        }
+        $x = $this->query('?action=query&meta=tokens&format=json');
+        return $x['query']['tokens']['csrftoken'];
     }
 
     /**
@@ -496,7 +494,7 @@ class wikipedia {
      * @return Api result.
      **/
     function purgeCache($page) {
-        return $this->query('?action=purge&titles='.urlencode($page).'&format=php');
+        return $this->query('?action=purge&titles='.urlencode($page).'&format=json');
     }
 
     /**
@@ -506,7 +504,7 @@ class wikipedia {
      * @return bool.
      **/
     function checkEmail($user) {
-        $x = $this->query('?action=query&meta=allmessages&ammessages=noemailtext|notargettext&amlang=en&format=php');
+        $x = $this->query('?action=query&meta=allmessages&ammessages=noemailtext|notargettext&amlang=en&format=json');
         $messages[0] = $x['query']['allmessages'][0]['*'];
         $messages[1] = $x['query']['allmessages'][1]['*'];
         $page = $this->http->get(str_replace('api.php','index.php',$this->url).'?title=Special:EmailUser&target='.urlencode($user));
@@ -527,7 +525,7 @@ class wikipedia {
         $continue = '&rawcontinue=';
         $pages = array();
         while (true) {
-            $ret = $this->query('?action=query&list=embeddedin&eititle='.urlencode($page).$continue.$extra.'&eilimit=500&format=php');
+            $ret = $this->query('?action=query&list=embeddedin&eititle='.urlencode($page).$continue.$extra.'&eilimit=500&format=json');
             if ($sleep != null) {
                 sleep($sleep);
             }
@@ -573,7 +571,7 @@ class wikipedia {
         if ($maxlag!='') {
             $maxlag='&maxlag='.$maxlag;
         }
-        return $this->query('?action=edit&format=php'.$maxlag,$params);
+        return $this->query('?action=edit&format=json'.$maxlag,$params);
     }
 
     /**
@@ -616,7 +614,7 @@ class wikipedia {
                 $params[$o] = true;
             }
         }
-        return $this->query('?action=move&format=php',$params);
+        return $this->query('?action=move&format=json',$params);
     }
 
     /**
@@ -628,7 +626,7 @@ class wikipedia {
      * @return api result
      **/
     function rollback ($title,$user,$reason=null,$bot=false) {
-        $ret = $this->query('?action=query&prop=revisions&rvtoken=rollback&titles='.urlencode($title).'&format=php');
+        $ret = $this->query('?action=query&prop=revisions&rvtoken=rollback&titles='.urlencode($title).'&format=json');
         foreach ($ret['query']['pages'] as $x) {
             $token = $x['revisions'][0]['rollbacktoken'];
             break;
@@ -642,7 +640,7 @@ class wikipedia {
             $params['markbot'] = true;
         }
         if ($reason != null) { $params['summary'] = $reason; }
-            return $this->query('?action=rollback&format=php',$params);
+            return $this->query('?action=rollback&format=json',$params);
         }
 
     /**
@@ -669,7 +667,7 @@ class wikipedia {
                 $params[$o] = true;
             }
         }
-        $ret = $this->query('?action=block&format=php',$params);
+        $ret = $this->query('?action=block&format=json',$params);
         /* Retry on a failed token. */
         if ($retry and $ret['error']['code']=='badtoken') {
             $this->token = $this->getedittoken();
@@ -693,7 +691,7 @@ class wikipedia {
             'reason' => $reason,
             'token' => $this->token
         );
-        return $this->query('?action=unblock&format=php',$params);
+        return $this->query('?action=unblock&format=json',$params);
     }
 
     /**
@@ -717,7 +715,7 @@ class wikipedia {
         if ($ccme) {
             $params['ccme'] = true;
         }
-        return $this->query('?action=emailuser&format=php',$params);
+        return $this->query('?action=emailuser&format=json',$params);
     }
 
     /**
@@ -735,7 +733,7 @@ class wikipedia {
             'reason' => $reason,
             'token' => $this->token
         );
-        return $this->query('?action=delete&format=php',$params);
+        return $this->query('?action=delete&format=json',$params);
     }
 
     /**
@@ -753,7 +751,7 @@ class wikipedia {
             'reason' => $reason,
             'token' => $this->token
         );
-        return $this->query('?action=undelete&format=php',$params);
+        return $this->query('?action=undelete&format=json',$params);
     }
 
     /**
@@ -779,7 +777,7 @@ class wikipedia {
         if ($cascade) {
             $params['cascade'] = true;
         }
-        return $this->query('?action=protect&format=php',$params);
+        return $this->query('?action=protect&format=json',$params);
     }
 
     /**
@@ -800,7 +798,7 @@ class wikipedia {
                 'ignorewarnings'  => '1',
                 'file'            => '@'.$file
         );
-        return $this->query('?action=upload&format=php',$params);
+        return $this->query('?action=upload&format=json',$params);
      }
     
     /*
@@ -858,7 +856,7 @@ class wikipedia {
      **/
     function userrights ($user,$add,$remove,$reason='') {
         // get the userrights token
-        $token = $this->query('?action=query&list=users&ususers='.urlencode($user).'&ustoken=userrights&format=php');
+        $token = $this->query('?action=query&list=users&ususers='.urlencode($user).'&ustoken=userrights&format=json');
         $token = $token['query']['users'][0]['userrightstoken'];
         $params = array(
             'user' => $user,
@@ -867,7 +865,7 @@ class wikipedia {
             'remove' => $remove,
             'reason' => $reason
         );
-        return $this->query('?action=userrights&format=php',$params);
+        return $this->query('?action=userrights&format=json',$params);
     }
 	
     /**
@@ -876,7 +874,7 @@ class wikipedia {
      * @return The number of images with the same sha1 hash.
      **/
     function imagematches ($hash) {
-		$x = $this->query('?action=query&list=allimages&format=php&aisha1='.$hash);
+		$x = $this->query('?action=query&list=allimages&format=json&aisha1='.$hash);
 		return count($x['query']['allimages']);
     }
 
@@ -886,7 +884,7 @@ class wikipedia {
      * @return The URL pointing directly to the media file (Eg http://upload.mediawiki.org/wikipedia/en/1/1/Example.jpg)
      **/
     function getfilelocation ($page) {
-        $x = $this->query('?action=query&format=php&prop=imageinfo&titles='.urlencode($page).'&iilimit=1&iiprop=url');
+        $x = $this->query('?action=query&format=json&prop=imageinfo&titles='.urlencode($page).'&iilimit=1&iiprop=url');
         foreach ($x['query']['pages'] as $ret ) {
             if (isset($ret['imageinfo'][0]['url'])) {
                 return $ret['imageinfo'][0]['url'];
@@ -901,7 +899,7 @@ class wikipedia {
      * @return The user who uploaded the topmost version of the file.
      **/
     function getfileuploader ($page) {
-        $x = $this->query('?action=query&format=php&prop=imageinfo&titles='.urlencode($page).'&iilimit=1&iiprop=user');
+        $x = $this->query('?action=query&format=json&prop=imageinfo&titles='.urlencode($page).'&iilimit=1&iiprop=user');
         foreach ($x['query']['pages'] as $ret ) {
             if (isset($ret['imageinfo'][0]['user'])) {
                 return $ret['imageinfo'][0]['user'];

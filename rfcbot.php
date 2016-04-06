@@ -75,7 +75,7 @@ $RFC_dashboard		= array();
 $RFC_listofentries	= array();
 
 foreach ($RFC_categories as $cat) {
-	$RFC_submissions[$cat]		= "<noinclude>\n'''The following discussions are requested to have community-wide attention:'''\n</noinclude>\n";
+	$RFC_submissions[$cat]		= "<noinclude>\n{{rfclistintro}}\n</noinclude>\n";
 	$RFC_dashboard[$cat]		= "";
 	$RFC_listofentries[$cat]	= array();
 }

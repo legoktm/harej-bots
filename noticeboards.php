@@ -40,7 +40,7 @@ function nbprocess ($pagearray, $color, $submissionpage) {
 	
 	foreach ($pagearray as $topic => $page) {
 		
-		$raw = $objwiki->query("?action=parse&page=". urlencode($page) . "&prop=sections&format=php");
+		$raw = $objwiki->query("?action=parse&page=". urlencode($page) . "&prop=sections&format=json");
 		
 		$sections = array();
 		$seccount = 0;

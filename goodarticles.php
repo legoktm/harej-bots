@@ -40,7 +40,7 @@ class extendedWikiBot extends wikipedia {
 		    $append = '&rvstartid='.$revid;
 	
 		for ($i=0;$i<5;$i++) {
-			$x = parent::query('?action=query&format=php&prop=revisions&titles='.urlencode($page).'&rvlimit=1&rvprop=content|timestamp'.$append);
+			$x = parent::query('?action=query&format=json&prop=revisions&titles='.urlencode($page).'&rvlimit=1&rvprop=content|timestamp'.$append);
 			if (isset($x['query']['pages'])) {
 				foreach ($x['query']['pages'] as $ret) {
 					if (isset($ret['revisions'][0]['*'])) {

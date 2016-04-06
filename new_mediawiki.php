@@ -54,14 +54,14 @@ class mediawiki {
 		if ( is_array($query) ) {
 			$query = $this->queryString($query);
 		} else {
-			$query .= '&format=php';
+			$query .= '&format=json';
 		}
 		if ( $post === null || $post === false ) {
 			$data = $this->http->get($this->url . $query);
 		} else {
 			$data = $this->http->post($this->url . $query, $post);
 		}
-		return unserialize($data);
+		return json_decode($data, true);
 	}
 
 	/**
@@ -69,7 +69,7 @@ class mediawiki {
 	 * @return string
 	 */
 	protected function queryString( $query ) {
-		$return = "?format=php";
+		$return = "?format=json";
 		foreach ($query as $key => $value) {
 			$return .=  "&" . urlencode($key) . "=" . urlencode($value);
 		}
@@ -125,13 +125,8 @@ class mediawiki {
 	public function getedittoken ($force = false) {
 		if ( $this->edittoken != null && $force == false )
 			return $this->edittoken;
-		$x = $this->query( array('action' => 'query', 'prop' => 'info', 'intoken' => 'edit', 'titles' => 'Main Page' ) );
-		@$id = key( $x['query']['pages'] );
-		if ( isset( $x['query']['pages'][$id]['edittoken'] ) )
-			return $x['query']['pages'][$id]['edittoken'];
-
-		$this->lasterror = 'notoken';
-		return false;
+		$x = $this->query( array('action' => 'query', 'meta' => 'tokens' ) );
+		return $x['query']['tokens']['csrftoken'];
 	}
 
 	// TODO: rewrite this function to be neat
