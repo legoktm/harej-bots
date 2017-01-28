@@ -85,6 +85,7 @@ def process_boards(boards, save_page):
     pywikibot.output('Updating [[%s]]' % pg.title())
     pg.save('Updating Noticeboard topics', minor=False, botflag=True)
 
+
 if __name__ == '__main__':
     process_boards(OrderedDict([
         ("Administrators' noticeboard", "Wikipedia:Administrators' noticeboard"),
