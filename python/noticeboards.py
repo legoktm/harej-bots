@@ -121,7 +121,7 @@ if __name__ == '__main__':
         # ("Requests for feedback", "Wikipedia:Requests for feedback"),
         # ("Drawing board", "Wikipedia:Drawing board"),
         ("Media copyright questions", "Wikipedia:Media copyright questions"),
-        ("The Teahouse", "Wikipedia:Teahouse/Questions"),
+        ("The Teahouse", "Wikipedia:Teahouse"),
 
     ]), 'Wikipedia:Dashboard/Help noticeboards')
 
