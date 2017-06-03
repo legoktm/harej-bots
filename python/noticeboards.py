@@ -51,9 +51,6 @@ def process_boards(boards, save_page):
             if section['level'] == '2':
                 found_sections.append(section['line'])
 
-        if topic != 'The Teahouse':  # Teahouse posts are in reverse order.
-            found_sections.reverse()  # I put my thang down, flip it, and reverse it.
-
         header_listing = ''
         listing = '<div style="padding-left:3em;">\n'
         for count, section in enumerate(found_sections):
@@ -111,7 +108,6 @@ if __name__ == '__main__':
         ("Neutral point of view noticeboard", "Wikipedia:Neutral point of view/Noticeboard"),
         ("External Links noticeboard", "Wikipedia:External links/Noticeboard"),
         ("Conflict of interest noticeboard", "Wikipedia:Conflict of interest/Noticeboard"),
-        ("Non-free content review", "Wikipedia:Non-free content review"),
         ("Dispute resolution noticeboard", "Wikipedia:Dispute resolution noticeboard"),
     ]), 'Wikipedia:Dashboard/Editorial noticeboards')
 
