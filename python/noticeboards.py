@@ -76,7 +76,7 @@ def process_boards(boards, save_page):
                                           topic=topic,
                                           count=len(found_sections),
                                           header_listing=header_listing,
-                                      ) + '}}\n%s\n\n{{collapse bottom}}\n' % listing
+                                      ) + '}}\n%s\n\n{{end}}\n' % listing
 
     pg = pywikibot.Page(site, save_page)
     # pywikibot.showDiff(pg.get(), noticeboard_listing)
