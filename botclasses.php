@@ -362,7 +362,7 @@ class wikipedia {
                 $continue = '&rawcontinue=&iucontinue='.urlencode($res['query-continue']['imageusage']['iucontinue']);
         }
     }
-    
+
     /**
     * Returns a list of pages that use the $template.
     * @param $template the template we are intereste into
@@ -387,7 +387,7 @@ class wikipedia {
             }
          }
      }
-    
+
     /**
      * Returns an array with all the subpages of $page
      * @param $page
@@ -588,7 +588,7 @@ class wikipedia {
         $data.= "\n" . $text;
         return $this->edit( $page, $data, $summary, $minor, $bot );
     }
-    
+
     /**
      * Moves a page.
      * @param $old Name of page to move.
@@ -799,18 +799,18 @@ class wikipedia {
         );
         return $this->query('?action=upload&format=json',$params);
      }
-    
+
     /*
     $page - page
     $revs - rev ids to delete (seperated with ,)
     $comment - delete comment
     */
     function revdel ($page,$revs,$comment) {
-    	
+
         if ($this->token==null) {
             $this->token = $this->getedittoken();
         }
-        
+
         $post = array(
             'wpEditToken'       => $this->token,
             'ids' => $revs,
@@ -866,7 +866,7 @@ class wikipedia {
         );
         return $this->query('?action=userrights&format=json',$params);
     }
-	
+
     /**
      * Gets the number of images matching a particular sha1 hash.
      * @param $hash The sha1 hash for an image.
@@ -891,7 +891,7 @@ class wikipedia {
                 return false;
         }
     }
- 
+
     /**  BMcN 2012-09-16
      * Retrieve a media file's uploader.
      * @param $page The "File:" page
@@ -957,7 +957,7 @@ class extended extends wikipedia
         $data = $this->getpage( $page );
         return str_replace( $string, $newstring, $data );
     }
-    
+
     /**
      * Get a template from a page
      * @param $page The page we're working with
@@ -973,7 +973,5 @@ class extended extends wikipedia
            return $matches[0][0];
        else
            return NULL;
-     }    
+     }
 }
-
-
