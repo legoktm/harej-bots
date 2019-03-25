@@ -80,7 +80,6 @@ class http {
         curl_setopt($this->ch,CURLOPT_COOKIEJAR,'/tmp/cluewikibot.cookies.'.$this->uid.'.dat');
         curl_setopt($this->ch,CURLOPT_COOKIEFILE,'/tmp/cluewikibot.cookies.'.$this->uid.'.dat');
         curl_setopt($this->ch,CURLOPT_MAXCONNECTS,100);
-        curl_setopt($this->ch,CURLOPT_CLOSEPOLICY,CURLCLOSEPOLICY_LEAST_RECENTLY_USED);
         $this->postfollowredirs = 0;
         $this->getfollowredirs = 1;
         $this->cookie_jar = array();
