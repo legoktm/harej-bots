@@ -216,7 +216,8 @@ class wikipedia {
         } else {
             $ret = $this->http->post($this->url.$query,$post);
         }
-	    if ($this->http->http_code() == "504" && $AssumeHTTPFailuresAreJustTimeoutsAndShouldBeSuppressed) {
+		//var_dump($this->http->http_code());
+	    if ($this->http->http_code() == 0 && $AssumeHTTPFailuresAreJustTimeoutsAndShouldBeSuppressed) {
 			return array(); // Meh
 	    }
 		if ($this->http->http_code() != "200") {
