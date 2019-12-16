@@ -150,7 +150,7 @@ foreach ($RFC_categories as $cat) {
 		if (substr($randomuser_talkpage,0,strlen("User talk")) != "User talk") {
 			continue;
 		}
-		if ( !$wiki->nobots("User talk:" . $frs_username, 'Legobot' ) {
+		if ( !$wiki->nobots("User talk:" . $frs_username, 'Legobot' ) ) {
 			continue;
 		}
 		$randomuser_talkpage->addSection("Please comment on [[" . $rfc_pool[$rfctouse]['page'] . "#rfc_" . $rfctouse . "|" . $rfc_pool[$rfctouse]['page'] . "]]","{{subst:FRS message|title=" . $rfc_pool[$rfctouse]['page'] . "|rfcid=" . $rfctouse . "}} <!-- FRS id " . $rfcdb->insert_id . " --> ~~~~");
