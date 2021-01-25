@@ -167,7 +167,7 @@ foreach ($transclusions as $page) {
 	foreach ($matches[0] as $match) {
 		if (strpos($match, "|rfcid=") === false) { // if the rfcid is not found within an RFC template
 			$rfcid = generateRfcId(); # a seven-character random string with capital letters and digits
-			$content = str_replace($match, $match . "|rfcid=" . $rfcid . "}}{{subst:DNAU|5|weeks}}", $content);
+			$content = str_replace($match, "{{subst:DNAU|5|weeks}}\n" . $match . "|rfcid=" . $rfcid . "}}", $content);
 			$content = str_replace("}}|rfcid", "|rfcid", $content);
 			echo "Editing [[$page]]\n";
 			$page->edit($content,"Adding RFC ID.");
