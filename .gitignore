@@ -1,3 +1,9 @@
+auth.toml
 harejpass.php
 .tox/
 venv
+
+
+
+/target
+*.log
