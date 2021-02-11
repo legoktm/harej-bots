@@ -323,10 +323,12 @@ async fn run() -> Result<()> {
                 };
                 info!("Diff of [[{}]]:", &archive);
                 if print_diff(&original_wikitext, &new_wikitext) {
+                    use tokio::time::{sleep, Duration};
                     page.edit_text(&mut api, &new_wikitext, format!("Archiving: [[{}]]", mfd))
                         .await
                         .map_err(|e| anyhow!(e.to_string()))?;
                     info!("Saved edit to [[{}]]", &archive);
+                    sleep(Duration::from_secs(10)).await;
                 }
                 // Remove from WP:MfD
                 for temp in mfd_code.filter_templates()? {
