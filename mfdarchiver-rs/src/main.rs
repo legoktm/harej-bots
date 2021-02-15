@@ -31,7 +31,6 @@ use mediawiki::{
     page::{Page, PageError},
     title::Title,
 };
-use parsoid::node::Wikinode;
 use parsoid::prelude::*;
 use regex::Regex;
 use serde::Deserialize;
@@ -205,15 +204,17 @@ fn add_to_old_business(code: &Section, start_ts: &Date<Utc>, mfd: &str) -> Resul
     let template = Template::new_simple(mfd);
     // We can't use iter_sections() here because our newly inserted
     // header won't have <section> tags yet
-    let headings = code.select("h3");
+    let headings: Vec<_> = code
+        .select("h3")
+        .iter()
+        .filter_map(|node| node.as_heading())
+        .collect();
     for heading in &headings {
-        if let Wikinode::Heading(heading) = heading {
-            if heading.text_contents() == date {
-                // Add a newline to make the wikitext look nicer
-                heading.insert_after(&Wikicode::new_fragment("\n"));
-                template.insert_after_on(&heading);
-                return Ok(());
-            }
+        if heading.text_contents() == date {
+            // Add a newline to make the wikitext look nicer
+            heading.insert_after(&Wikicode::new_fragment("\n"));
+            template.insert_after_on(&heading);
+            return Ok(());
         }
     }
     // We did not find our date's header, boo.
