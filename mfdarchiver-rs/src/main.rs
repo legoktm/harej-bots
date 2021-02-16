@@ -27,52 +27,14 @@ use chrono::prelude::*;
 use chrono::Duration;
 use log::{debug, error, info};
 use mediawiki::{
-    api::Api,
     page::{Page, PageError},
     title::Title,
 };
+use hblib::{mwapi_auth, print_diff, setup_logging};
 use parsoid::prelude::*;
 use regex::Regex;
-use serde::Deserialize;
 
 const USER_AGENT: &str = "https://en.wikipedia.org/wiki/User:Legobot mfdarchiver-rs";
-
-/// Login information, stored in auth.toml
-#[derive(Deserialize)]
-struct Auth {
-    username: String,
-    password: String,
-}
-
-async fn mwapi() -> Result<Api> {
-    let mut api = Api::new("https://en.wikipedia.org/w/api.php").await?;
-    api.set_user_agent(USER_AGENT);
-    let path = {
-        let first = std::path::Path::new("auth.toml");
-        if first.exists() {
-            first.to_path_buf()
-        } else {
-            dirs_next::home_dir()
-                .ok_or_else(|| anyhow!("Cannot find home directory"))?
-                .join("auth.toml")
-        }
-    };
-    info!("Reading credentials from {:?}", path);
-    let auth: Auth = toml::from_str(&std::fs::read_to_string(path)?)?;
-    info!("Logging in as {}", auth.username);
-    api.login(auth.username, auth.password).await?;
-    Ok(api)
-}
-
-/// Return whether changes were made
-fn print_diff(old: &str, new: &str) -> bool {
-    use similar::TextDiff;
-    let diff = TextDiff::from_lines(old, new).unified_diff().to_string();
-    for line in diff.split('\n') {
-        info!("{}", line);
-    }
-    !diff.trim().is_empty()
-}
 
 /// Extract all the currently transcluded MFDs
 async fn get_listed_mfds(code: &Wikicode) -> Result<Vec<String>> {
@@ -255,21 +217,7 @@ fn cleanup_empty_sections(code: &Section) {
 
 #[tokio::main]
 async fn main() {
-    use flexi_logger::{opt_format, Age, Cleanup, Criterion, Duplicate, Logger, Naming};
-    let logger = Logger::with_str("info, mfdarchiver_rs=debug")
-        .log_to_file()
-        .duplicate_to_stdout(Duplicate::Info)
-        .format(opt_format)
-        .suppress_timestamp()
-        .append()
-        .use_buffering(true)
-        .rotate(
-            Criterion::Age(Age::Day),
-            Naming::Timestamps,
-            Cleanup::KeepLogFiles(30),
-        )
-        .start()
-        .unwrap();
+    let logger = setup_logging("mfdarchiver_rs");
     match run().await {
         Ok(_) => info!("Finished successfully"),
         Err(e) => error!("Error: {}", e.to_string()),
@@ -280,7 +228,7 @@ async fn main() {
 async fn run() -> Result<()> {
     let client = Client::new("https://en.wikipedia.org/api/rest_v1", USER_AGENT)?;
     let mfd_code = client.get("Wikipedia:Miscellany for deletion").await?;
-    let mut api = mwapi().await?;
+    let mut api = mwapi_auth(USER_AGENT).await?;
     let mfds = get_listed_mfds(&mfd_code).await?;
     for mfd in &mfds {
         debug!("Processing {}", mfd);
