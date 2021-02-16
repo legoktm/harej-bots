@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Result};
-use serde::Deserialize;
-use mediawiki::api::Api;
-use log::info;
 use flexi_logger::LoggerHandle;
+use log::info;
+use mediawiki::api::Api;
+use serde::Deserialize;
 
 /// Login information, stored in auth.toml
 #[derive(Deserialize)]
@@ -45,7 +45,6 @@ pub fn print_diff(old: &str, new: &str) -> bool {
     }
     !diff.trim().is_empty()
 }
-
 
 pub fn setup_logging(name: &str) -> LoggerHandle {
     use flexi_logger::{opt_format, Age, Cleanup, Criterion, Duplicate, Logger, Naming};

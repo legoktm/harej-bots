@@ -25,12 +25,12 @@
 use anyhow::{anyhow, Result};
 use chrono::prelude::*;
 use chrono::Duration;
+use hblib::{mwapi_auth, print_diff, setup_logging};
 use log::{debug, error, info};
 use mediawiki::{
     page::{Page, PageError},
     title::Title,
 };
-use hblib::{mwapi_auth, print_diff, setup_logging};
 use parsoid::prelude::*;
 use regex::Regex;
 
