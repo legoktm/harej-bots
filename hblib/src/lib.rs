@@ -4,6 +4,9 @@ use log::info;
 use mediawiki::api::Api;
 use serde::Deserialize;
 
+// Re-export to centralize the dependency
+pub use mediawiki;
+
 /// Login information, stored in auth.toml
 #[derive(Deserialize)]
 struct Auth {
@@ -14,6 +17,7 @@ struct Auth {
 pub async fn mwapi(user_agent: &str) -> Result<Api> {
     let mut api = Api::new("https://en.wikipedia.org/w/api.php").await?;
     api.set_user_agent(user_agent);
+    api.set_edit_delay(Some(10_000));
     Ok(api)
 }
 

@@ -845,8 +845,7 @@ checksum = "7ffc5c5338469d4d3ea17d269fa8ea3512ad247247c30bd2df69e68309ed0a08"
 [[package]]
 name = "mediawiki"
 version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63a2e873c076eb1b39d787ac03abc74677b6b00b0de5d636f305994f93c2a88d"
+source = "git+https://github.com/legoktm/mediawiki_rust?branch=fix-sleep#1301ab21e9349ac68c589dd5e6cc8ab1095d1e79"
 dependencies = [
  "base64",
  "config",
@@ -875,7 +874,6 @@ dependencies = [
  "chrono",
  "hblib",
  "log",
- "mediawiki",
  "parsoid 0.5.0-alpha.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex",
  "tokio",
