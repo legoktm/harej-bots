@@ -131,10 +131,7 @@ fn add_to_archive(
         if let Some(heading) = section.heading() {
             if heading.text_contents() == date {
                 let line = Wikicode::new_node("li");
-                line.append(&WikiLink::new(
-                    mfd,
-                    &Wikicode::new_text(mfd),
-                ));
+                line.append(&WikiLink::new(mfd, &Wikicode::new_text(mfd)));
                 if let Some(result) = &result {
                     line.append(&Wikicode::new_text(&format!(" ({})", result)));
                 }
@@ -148,7 +145,7 @@ fn add_to_archive(
                         let ul = Wikicode::new_node("ul");
                         ul.append(&line);
                         section.append(&ul);
-                    },
+                    }
                 }
             }
         }
