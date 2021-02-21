@@ -874,7 +874,7 @@ dependencies = [
  "chrono",
  "hblib",
  "log",
- "parsoid 0.5.0-alpha.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parsoid",
  "regex",
  "tokio",
 ]
@@ -1087,26 +1087,13 @@ dependencies = [
 
 [[package]]
 name = "parsoid"
-version = "0.5.0-alpha.1"
-dependencies = [
- "indexmap",
- "kuchiki",
- "markup5ever",
- "reqwest",
- "serde 1.0.123",
- "serde_json",
- "thiserror",
- "urlencoding",
-]
-
-[[package]]
-name = "parsoid"
-version = "0.5.0-alpha.1"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc67d11931f61492b5305671ea2707908d37fbd7f15f40896689ff72715d0d4a"
+checksum = "f20de809dbe07995fef0cfc35b48239604a80961e587bce47923eb9756bd836b"
 dependencies = [
  "indexmap",
  "kuchiki",
+ "log",
  "markup5ever",
  "reqwest",
  "serde 1.0.123",

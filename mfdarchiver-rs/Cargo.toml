@@ -11,6 +11,6 @@ hblib = { path = "../hblib" }
 anyhow = "1.0"
 chrono = "0.4"
 log = "0.4"
-parsoid = "0.5.0-alpha.1"
+parsoid = "0.5.0"
 regex = "1"
 tokio = {version = "1", features = ["full"]}

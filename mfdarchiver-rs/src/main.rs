@@ -43,7 +43,7 @@ async fn get_listed_mfds(code: &Wikicode) -> Result<Vec<String>> {
         .filter_templates()?
         .iter()
         .filter_map(|temp| {
-            let name = temp.pretty_normalized_name();
+            let name = temp.name();
             if name.starts_with("Wikipedia:Miscellany for deletion")
                 && name != "Wikipedia:Miscellany for deletion/Front matter"
             {
@@ -103,7 +103,7 @@ async fn create_archive(client: &Client, ts: &DateTime<Utc>) -> Result<Wikicode>
     let days = days_in_month(ts.year(), ts.month());
     for day in (1..=days).rev() {
         let date = Utc.ymd(ts.year(), ts.month(), day as u32);
-        let heading = Heading::new(3, &make_header(&date))?;
+        let heading = Heading::new(3, &Wikicode::new_text(&make_header(&date)))?;
         code.append(&heading);
     }
     // Roundtrip through Parsoid so we get nice <section> tags
@@ -130,13 +130,13 @@ fn add_to_archive(
     for section in archive_code.iter_sections() {
         if let Some(heading) = section.heading() {
             if heading.text_contents() == date {
-                let line = Wikicode::new_fragment("<li>");
+                let line = Wikicode::new_node("li");
                 line.append(&WikiLink::new(
-                    &format!("./{}", mfd),
-                    &Wikicode::new_fragment(mfd),
+                    mfd,
+                    &Wikicode::new_text(mfd),
                 ));
                 if let Some(result) = &result {
-                    line.append(&Wikicode::new_fragment(&format!(" ({})", result)));
+                    line.append(&Wikicode::new_text(&format!(" ({})", result)));
                 }
                 match section.select_first("ul") {
                     // Add our bullet to the top of the list
@@ -144,10 +144,11 @@ fn add_to_archive(
                         list.prepend(&line);
                     }
                     // Wrap the line in a <ul> block
-                    None => section.append(&Wikicode::new_fragment(&format!(
-                        "<ul>{}</ul>",
-                        &line.to_string()
-                    ))),
+                    None => {
+                        let ul = Wikicode::new_node("ul");
+                        ul.append(&line);
+                        section.append(&ul);
+                    },
                 }
             }
         }
@@ -159,7 +160,7 @@ fn add_to_old_business(code: &Section, start_ts: &Date<Utc>, mfd: &str) -> Resul
     let date = make_header(start_ts);
     // First check to make sure it's not already in the old business
     for temp in code.filter_templates()? {
-        if temp.pretty_normalized_name() == mfd {
+        if temp.name() == mfd {
             return Ok(());
         }
     }
@@ -174,13 +175,13 @@ fn add_to_old_business(code: &Section, start_ts: &Date<Utc>, mfd: &str) -> Resul
     for heading in &headings {
         if heading.text_contents() == date {
             // Add a newline to make the wikitext look nicer
-            heading.insert_after(&Wikicode::new_fragment("\n"));
+            heading.insert_after(&Wikicode::new_text("\n"));
             template.insert_after_on(&heading);
             return Ok(());
         }
     }
     // We did not find our date's header, boo.
-    let heading = Heading::new(3, &date)?;
+    let heading = Heading::new(3, &Wikicode::new_text(&date))?;
     headings[0].insert_before(&heading);
     template.insert_before_on(&headings[0]);
     Ok(())
@@ -189,7 +190,7 @@ fn add_to_old_business(code: &Section, start_ts: &Date<Utc>, mfd: &str) -> Resul
 /// Remove a MfD from the current section
 fn remove_from_current(code: &Section, mfd: &str) -> Result<()> {
     for temp in code.filter_templates()? {
-        if temp.pretty_normalized_name() == mfd {
+        if temp.name() == mfd {
             temp.detach();
             break;
         }
@@ -279,7 +280,7 @@ async fn run() -> Result<()> {
                 }
                 // Remove from WP:MfD
                 for temp in mfd_code.filter_templates()? {
-                    if &temp.pretty_normalized_name() == mfd {
+                    if &temp.name() == mfd {
                         temp.detach();
                     }
                 }
