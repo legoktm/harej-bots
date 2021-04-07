@@ -47,7 +47,8 @@ async fn get_listed_mfds(code: &Wikicode) -> Result<Vec<String>> {
             if name.starts_with("Wikipedia:Miscellany for deletion")
                 && name != "Wikipedia:Miscellany for deletion/Front matter"
             {
-                Some(name)
+                // HACK: work around https://gitlab.com/legoktm/parsoid-rs/-/issues/10
+                Some(name.replace("%3F", "?"))
             } else {
                 None
             }
@@ -277,7 +278,8 @@ async fn run() -> Result<()> {
                 }
                 // Remove from WP:MfD
                 for temp in mfd_code.filter_templates()? {
-                    if &temp.name() == mfd {
+                    // HACK: work around https://gitlab.com/legoktm/parsoid-rs/-/issues/10
+                    if &temp.name().replace("%3F", "?") == mfd {
                         temp.detach();
                     }
                 }
