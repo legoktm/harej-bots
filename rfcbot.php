@@ -80,9 +80,6 @@ foreach ($RFC_categories as $cat) {
 	$RFC_listofentries[$cat]	= array();
 }
 
-// This specific exception was provided for upon request of WikiProject Philosophy.
-$RFC_submissions["reli"] = "'''The following discussions are requested to have community-wide attention:'''\n{{Philosophy/Nav}}\n\n"; 
-
 $RFC_pagetitles = array(
 "bio"		=> "Wikipedia:Requests for comment/Biographies",
 "econ"		=> "Wikipedia:Requests for comment/Economy, trade, and companies",
