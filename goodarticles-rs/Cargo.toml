@@ -1,0 +1,15 @@
+[package]
+name = "goodarticles-rs"
+version = "0.1.0"
+authors = ["Kunal Mehta <legoktm@debian.org>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+hblib = { path = "../hblib" }
+anyhow = "1.0"
+indexmap = "1.6.1"
+log = "0.4"
+parsoid = "0.5.0"
+tokio = {version = "1", features = ["full"]}
