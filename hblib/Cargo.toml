@@ -11,8 +11,7 @@ anyhow = "1.0"
 dirs-next = "2"
 flexi_logger = {version = "0.17.1", default-features = false}
 log = "0.4"
-# mediawiki = "0.2.6"
-mediawiki = { git = "https://github.com/legoktm/mediawiki_rust", branch = "fix-sleep" }
+mediawiki = "0.2.7"
 serde = {version = "1", features = ["derive"]}
 similar = "1.1"
 toml = "0.5"

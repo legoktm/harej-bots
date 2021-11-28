@@ -25,16 +25,11 @@
 use anyhow::{anyhow, Result};
 use chrono::prelude::*;
 use chrono::Duration;
-use hblib::mediawiki::{
-    page::{Page, PageError},
-    title::Title,
-};
-use hblib::{mwapi_auth, print_diff, setup_logging};
+use hblib::{print_diff, setup_logging};
 use log::{debug, error, info};
+use mwbot::{Bot, Error, SaveOptions};
 use parsoid::prelude::*;
 use regex::Regex;
-
-const USER_AGENT: &str = "https://en.wikipedia.org/wiki/User:Legobot mfdarchiver-rs";
 
 /// Extract all the currently transcluded MFDs
 async fn get_listed_mfds(code: &Wikicode) -> Result<Vec<String>> {
@@ -99,7 +94,7 @@ fn make_header(date: &Date<Utc>) -> String {
 }
 
 /// Create a new archive page from scratch
-async fn create_archive(client: &Client, ts: &DateTime<Utc>) -> Result<Wikicode> {
+async fn create_archive(client: &ParsoidClient, ts: &DateTime<Utc>) -> Result<Wikicode> {
     let code = Wikicode::new(&Template::new_simple("TOCright").to_string());
     let days = days_in_month(ts.year(), ts.month());
     for day in (1..=days).rev() {
@@ -174,14 +169,14 @@ fn add_to_old_business(code: &Section, start_ts: &Date<Utc>, mfd: &str) -> Resul
         if heading.text_contents() == date {
             // Add a newline to make the wikitext look nicer
             heading.insert_after(&Wikicode::new_text("\n"));
-            template.insert_after_on(&heading);
+            heading.insert_after(&template);
             return Ok(());
         }
     }
     // We did not find our date's header, boo.
     let heading = Heading::new(3, &Wikicode::new_text(&date))?;
     headings[0].insert_before(&heading);
-    template.insert_before_on(&headings[0]);
+    headings[0].insert_before(&template);
     Ok(())
 }
 
@@ -225,13 +220,14 @@ async fn main() {
 }
 
 async fn run() -> Result<()> {
-    let client = Client::new("https://en.wikipedia.org/api/rest_v1", USER_AGENT)?;
-    let mfd_code = client.get("Wikipedia:Miscellany for deletion").await?;
-    let mut api = mwapi_auth(USER_AGENT).await?;
+    let bot = Bot::from_default_config().await?;
+    let mfd_page = bot.get_page("Wikipedia:Miscellany for deletion");
+    let mfd_code = mfd_page.get_html().await?;
     let mfds = get_listed_mfds(&mfd_code).await?;
     for mfd in &mfds {
         debug!("Processing {}", mfd);
-        let code = client.get(&mfd).await?;
+        let page = bot.get_page(mfd);
+        let code = page.get_html().await?;
         let text = code.text_contents();
         // Extract the timestamps out of this discussion
         let ts_re = Regex::new(r"\d\d:\d\d, \d?\d \w+ \d\d\d\d \(UTC\)").unwrap();
@@ -249,32 +245,40 @@ async fn run() -> Result<()> {
             let result = extract_result(&code);
             if should_archive(&close_ts) {
                 info!("Going to archive {}", mfd);
-                let archive = start_ts
-                    .format("Wikipedia:Miscellany for deletion/Archived debates/%B %Y")
-                    .to_string();
-                let archive_code = match client.get(&archive).await {
+                let archive = bot.get_page(
+                    &start_ts
+                        .format("Wikipedia:Miscellany for deletion/Archived debates/%B %Y")
+                        .to_string(),
+                );
+
+                let archive_code = match page.get_html().await {
                     Ok(code) => code,
                     // Doesn't exist yet, create a new one
-                    Err(parsoid::Error::PageDoesNotExist(_)) => {
-                        create_archive(&client, &start_ts).await?
+                    Err(Error::PageDoesNotExist(_)) => {
+                        create_archive(bot.get_parsoid(), &start_ts).await?
                     }
                     Err(e) => return Err(anyhow!(e)),
                 };
                 // Add to archive page
-                add_to_archive(&archive_code, &start_ts, &mfd, &result);
-                let new_wikitext = client.transform_to_wikitext(&archive_code).await?;
-                let page = Page::new(Title::new_from_full(&archive, &api));
-                let original_wikitext = match page.text(&api).await {
+                add_to_archive(&archive_code, &start_ts, mfd, &result);
+                let new_wikitext = bot
+                    .get_parsoid()
+                    .transform_to_wikitext(&archive_code)
+                    .await?;
+                let original_wikitext = match archive.get_wikitext().await {
                     Ok(text) => text,
-                    Err(PageError::Missing(_)) => "".to_string(),
-                    Err(e) => return Err(anyhow!(e.to_string())),
+                    Err(Error::PageDoesNotExist(_)) => "".to_string(),
+                    Err(err) => return Err(err.into()),
                 };
-                info!("Diff of [[{}]]:", &archive);
+                info!("Diff of [[{}]]:", archive.title());
                 if print_diff(&original_wikitext, &new_wikitext) {
-                    page.edit_text(&mut api, &new_wikitext, format!("Archiving: [[{}]]", mfd))
-                        .await
-                        .map_err(|e| anyhow!(e.to_string()))?;
-                    info!("Saved edit to [[{}]]", &archive);
+                    archive
+                        .save(
+                            archive_code,
+                            &SaveOptions::summary(&format!("Archiving: [[{}]]", mfd)),
+                        )
+                        .await?;
+                    info!("Saved edit to [[{}]]", archive.title());
                 }
                 // Remove from WP:MfD
                 for temp in mfd_code.filter_templates()? {
@@ -291,10 +295,10 @@ async fn run() -> Result<()> {
             for section in mfd_code.iter_sections() {
                 if let Some(heading) = section.heading() {
                     if heading.text_contents() == "Old business" {
-                        add_to_old_business(&section, &start_ts.date(), &mfd)?;
+                        add_to_old_business(&section, &start_ts.date(), mfd)?;
                         cleanup_empty_sections(&section);
                     } else if heading.text_contents() == "Current discussions" {
-                        remove_from_current(&section, &mfd)?;
+                        remove_from_current(&section, mfd)?;
                         cleanup_empty_sections(&section);
                     }
                 }
@@ -311,22 +315,17 @@ async fn run() -> Result<()> {
         }
     }
 
-    let mfd_wikitext = client.transform_to_wikitext(&mfd_code).await?;
-    let mfd_page = Page::new(Title::new_from_full(
-        "Wikipedia:Miscellany for deletion",
-        &api,
-    ));
-    let mfd_original = mfd_page
-        .text(&api)
-        .await
-        .map_err(|e| anyhow!(e.to_string()))?;
+    let mfd_wikitext = bot.get_parsoid().transform_to_wikitext(&mfd_code).await?;
+    let mfd_original = mfd_page.get_wikitext().await?;
 
     info!("Diff of [[Wikipedia:Miscellany for deletion]]:");
     if print_diff(&mfd_original, &mfd_wikitext) {
         mfd_page
-            .edit_text(&mut api, &mfd_wikitext, "Removing archived MfD debates")
-            .await
-            .map_err(|e| anyhow!(e.to_string()))?;
+            .save(
+                mfd_code,
+                &SaveOptions::summary("Removing archived MfD debates"),
+            )
+            .await?;
         info!("Saved edit to [[Wikipedia:Miscellany for deletion]]");
     }
     Ok(())
