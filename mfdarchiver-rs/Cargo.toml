@@ -1,7 +1,7 @@
 [package]
 name = "mfdarchiver-rs"
 version = "0.1.0"
-authors = ["Kunal Mehta <legoktm@member.fsf.org>"]
+authors = ["Kunal Mehta <legoktm@debian.org>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

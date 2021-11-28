@@ -1,7 +1,7 @@
 /** mfdarchiver-rs -- Moves MfD discussions to the archive.
  *
  *  (c) 2013 Chris Grant - http://en.wikipedia.org/wiki/User:Chris_G
- *  (c) 2021 Kunal Mehta <legoktm@member.fsf.org>
+ *  (c) 2021 Kunal Mehta <legoktm@debian.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
