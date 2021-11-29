@@ -1,17 +1,18 @@
 use anyhow::{anyhow, Result};
-use hblib::mediawiki::{api::Api, page::Page, title::Title};
-use hblib::{mwapi_auth, print_diff, setup_logging};
+use hblib::{print_diff, setup_logging};
 use indexmap::IndexMap;
 use log::{debug, error, info, warn};
-use parsoid::prelude::*;
+use mwbot::generators::embeddedin;
+use mwbot::parsoid::*;
+use mwbot::{Bot, Error, Page, SaveOptions};
 use std::cmp::Ordering;
-use std::collections::HashMap;
 
-const USER_AGENT: &str = "https://en.wikipedia.org/wiki/User:Legobot mfdarchiver-rs";
+const ENABLE_EDITS: bool = false;
 
 /// Load users that don't want messages sent on their behalf
-async fn skip_notify_users(client: &Client) -> Result<Vec<String>> {
-    let code = client.get("User:GA bot/Don't notify users for me").await?;
+async fn skip_notify_users(bot: &Bot) -> Result<Vec<String>> {
+    let page = bot.get_page("User:GA bot/Don't notify users for me");
+    let code = page.get_html().await?;
     Ok(code
         .filter_links()
         .iter()
@@ -27,8 +28,9 @@ async fn skip_notify_users(client: &Client) -> Result<Vec<String>> {
 }
 
 /// Parse `[[User:GA bot/Stats]]` and turn it into a hashmap
-async fn ga_stats(client: &Client) -> Result<IndexMap<String, u32>> {
-    let code = client.get("User:GA bot/Stats").await?;
+async fn ga_stats(bot: &Bot) -> Result<IndexMap<String, u32>> {
+    let page = bot.get_page("User:GA bot/Stats");
+    let code = page.get_html().await?;
     Ok(code
         .select_first("table")
         .ok_or_else(|| anyhow!("Cannot find table on User:GA bot/Stats"))?
@@ -55,7 +57,7 @@ async fn ga_stats(client: &Client) -> Result<IndexMap<String, u32>> {
 }
 
 /// Save the current stats to `[[User:GA bot/Stats]]` for Wikipedians and as storage
-async fn save_stats(client: &Client, api: &Api, stats: &mut IndexMap<String, u32>) -> Result<()> {
+async fn save_stats(bot: &Bot, stats: &mut IndexMap<String, u32>) -> Result<()> {
     // We're going to recreate the table from scratch, hopefully doesn't cause too many dirty diffs
     let code =
         Wikicode::new(r#"<table class="wikitable"><tr><th>User</th><th>Reviews</th></tr></table>"#);
@@ -81,9 +83,9 @@ async fn save_stats(client: &Client, api: &Api, stats: &mut IndexMap<String, u32
         tr.append(&td2);
         table.append(&tr);
     }
-    let wikitext = client.transform_to_wikitext(&code).await?;
-    let page = Page::new(Title::new_from_full("User:GA bot/Stats", api));
-    let original = page.text(api).await.map_err(|e| anyhow!(e.to_string()))?;
+    let page = bot.get_page("User:GA bot/Stats");
+    let wikitext = bot.get_parsoid().transform_to_wikitext(&code).await?;
+    let original = page.get_wikitext().await?;
     print_diff(&original, &wikitext);
 
     Ok(())
@@ -181,32 +183,23 @@ fn has_ganotice(code: &Wikicode, title: &str, result: Option<&str>) -> bool {
     false
 }
 
-// TODO: upstream to mediawiki_rust
-async fn add_new_section(api: &mut Api, title: &str, text: &str, summary: &str) -> Result<()> {
-    let mut params: HashMap<String, String> = [
+// TODO: upstream to mwbot
+async fn add_new_section(bot: &Bot, page: &Page, text: &str, summary: &str) -> Result<()> {
+    let params = [
         ("action", "edit"),
-        ("title", title),
-        ("text", &text.to_string()),
-        ("summary", &summary.to_string()),
+        ("title", page.title()),
+        ("text", text),
+        ("summary", summary),
         ("bot", "1"),
         // v-- literally the only new line in this function
         ("section", "new"),
-        ("formatversion", "2"),
-        ("token", &api.get_edit_token().await?),
-    ]
-    .iter()
-    .map(|&(k, v)| (k.to_string(), v.to_string()))
-    .collect();
+    ];
 
-    if !api.user().user_name().is_empty() {
-        params.insert("assert".to_string(), "user".to_string());
-    }
-
-    let result = api.post_query_api_json(&params).await?;
+    let result = bot.get_api().post_with_token("csrf", &params).await?;
     match result["edit"]["result"].as_str() {
         Some("Success") => Ok(()),
-        Some(code) => Err(anyhow!("Editing error: {} on {}", code, title)),
-        None => Err(anyhow!("Unknown editing error on {}", title)),
+        Some(code) => Err(anyhow!("Editing error: {} on {}", code, page.title())),
+        None => Err(anyhow!("Unknown editing error on {}", page.title())),
     }
 }
 
@@ -251,26 +244,18 @@ fn get_existing_gans(code: &Wikicode) -> Result<Vec<Nomination>> {
 }
 
 /// Get transclusions from the Talk: namespace
-async fn get_talk_transclusions(api: &Api, name: &str) -> Result<Vec<String>> {
+async fn get_talk_transclusions(bot: &Bot, name: &str) -> Result<Vec<Page>> {
     debug!("Loading talk transclusions of {}", name);
-    let params = [
-        ("action", "query"),
-        ("list", "embeddedin"),
-        ("eititle", name),
-        // limit to Talk namespace
-        ("einamespace", "1"),
-        ("formatversion", "2"),
-    ]
-    .iter()
-    .map(|&(k, v)| (k.to_string(), v.to_string()))
-    .collect();
-    let result = api.get_query_api_json_all(&params).await?["query"]["embeddedin"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|obj| obj["title"].as_str().unwrap().to_string())
-        .collect();
-    Ok(result)
+    let mut pages = vec![];
+    let mut gen = embeddedin(bot, name);
+    while let Some(page) = gen.recv().await {
+        let page = page?;
+        if page.title().starts_with("Talk:") {
+            pages.push(page);
+        }
+    }
+
+    Ok(pages)
 }
 
 #[tokio::main]
@@ -284,16 +269,16 @@ async fn main() {
 }
 
 async fn run() -> Result<()> {
-    let client = Client::new("https://en.wikipedia.org/api/rest_v1", USER_AGENT)?;
-    let mut api = mwapi_auth(USER_AGENT).await?;
-    let _skip_notify_users = skip_notify_users(&client).await?;
-    let mut stats = ga_stats(&client).await?;
+    let bot = Bot::from_default_config().await?;
+    let _skip_notify_users = skip_notify_users(&bot).await?;
+    let mut stats = ga_stats(&bot).await?;
     // let talk_pages = get_talk_transclusions(&api, "Template:GA nominee").await?;
     let talk_pages: Vec<String> = vec![];
     for talk_page in talk_pages {
         info!("Procesing {}", talk_page);
         let title = talk_page.trim_start_matches("Talk:").to_string();
-        let talk_code = client.get(&talk_page).await?;
+        let talk = bot.get_page(&talk_page);
+        let talk_code = talk.get_html().await?;
         let temp = match find_template(&talk_code, "Template:GA nominee")? {
             Some(temp) => temp,
             None => {
@@ -302,11 +287,15 @@ async fn run() -> Result<()> {
             }
         };
         // FIXME: avoid unwrap()
-        let reviewpage = format!("{}/GA{}", talk_page, temp.get_param("page").unwrap());
-        debug!("Examining the review page at {}", reviewpage);
-        let reviewpage_code = match client.get(&reviewpage).await {
+        let reviewpage = bot.get_page(&format!(
+            "{}/GA{}",
+            talk_page,
+            temp.get_param("page").unwrap()
+        ));
+        debug!("Examining the review page at {}", reviewpage.title());
+        let reviewpage_code = match reviewpage.get_html().await {
             Ok(code) => code,
-            Err(parsoid::Error::PageDoesNotExist(name)) => {
+            Err(Error::PageDoesNotExist(name)) => {
                 info!("{} does not exist yet, skipping.", name);
                 continue;
             }
@@ -317,14 +306,17 @@ async fn run() -> Result<()> {
         let reviewer = match extract_reviewer(&reviewpage_code) {
             Some(reviewer) => reviewer,
             None => {
-                warn!("Couldn't find reviewer on {}, skipping", reviewpage);
+                warn!("Couldn't find reviewer on {}, skipping", reviewpage.title());
                 continue;
             }
         };
         let status = match temp.get_param("status").map(clean_status) {
             Some(status) => status,
             None => {
-                warn!("Couldn't find a status for {}, skipping", reviewpage);
+                warn!(
+                    "Couldn't find a status for {}, skipping",
+                    reviewpage.title()
+                );
                 continue;
             }
         };
@@ -332,43 +324,44 @@ async fn run() -> Result<()> {
             "new" => {
                 temp.set_param("status", "on review")?;
                 // Transclude the GA review if not already done
-                if find_template(&talk_code, &reviewpage)?.is_none() {
-                    let new_temp = Template::new_simple(&reviewpage);
+                if find_template(&talk_code, reviewpage.title())?.is_none() {
+                    let new_temp = Template::new_simple(reviewpage.title());
                     // Put some whitespace before
                     talk_code.append(&Wikicode::new_text("\n\n"));
-                    new_temp.append_on(&talk_code);
+                    talk_code.append(&new_temp);
                 }
 
-                let page = Page::new(Title::new_from_full(&talk_page, &api));
-                let current = match page.text(&api).await {
+                let current = match talk.get_wikitext().await {
                     Ok(text) => text,
                     Err(e) => {
                         error!(
                             "Error fetching wikitext of {}, skipping: {}",
-                            talk_page,
+                            talk.title(),
                             e.to_string()
                         );
                         continue;
                     }
                 };
-                let new_wikitext = client.transform_to_wikitext(&talk_code).await?;
-                if print_diff(&current, &new_wikitext) {
-                    /*page.edit_text(&mut api, &new_wikitext, "Transcluding GA review")
-                    .await
-                    .map_err(|e| anyhow!(e.to_string()))?;*/
+                let new_wikitext = bot.get_parsoid().transform_to_wikitext(&talk_code).await?;
+                if print_diff(&current, &new_wikitext) && ENABLE_EDITS {
+                    talk.save(
+                        talk_code.clone(),
+                        &SaveOptions::summary("Transcluding GA review"),
+                    )
+                    .await?;
                 }
 
                 // Notify the nominator
                 let nominator = match extract_nominator(&talk_code) {
                     Some(nom) => nom,
                     None => {
-                        warn!("Couldn't find nominator on {}, skipping", talk_page);
+                        warn!("Couldn't find nominator on {}, skipping", talk.title());
                         continue;
                     }
                 };
                 // TODO: follow redirect
-                let nom_talk = format!("User talk:{}", nominator);
-                let nom_talk_code = client.get(&nom_talk).await?;
+                let nom_talk = bot.get_page(&format!("User talk:{}", nominator));
+                let nom_talk_code = nom_talk.get_html().await?;
                 if !has_ganotice(&nom_talk_code, &title, None) {
                     // Yeah, wikitext sucks but it's too annoying to build with Parsoid. Maybe we need a new wrapper around GANotice.
                     let message = format!(
@@ -377,7 +370,7 @@ async fn run() -> Result<()> {
                     );
                     let summary = format!("Your [[WP:GA|GA]] nomination of [[{}]]", title);
                     // TODO: {{nobots}} check
-                    add_new_section(&mut api, &nom_talk, &message, &summary).await?;
+                    add_new_section(&bot, &nom_talk, &message, &summary).await?;
                 }
             }
             _ => {}
@@ -385,31 +378,33 @@ async fn run() -> Result<()> {
     }
 
     // Save new stats back
-    save_stats(&client, &api, &mut stats).await?;
+    save_stats(&bot, &mut stats).await?;
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
 
-    fn client() -> Client {
-        Client::new("https://en.wikipedia.org/api/rest_v1", USER_AGENT).unwrap()
+    async fn bot() -> Bot {
+        Bot::from_path(&Path::new("mwbot-test.toml")).await.unwrap()
     }
 
     #[tokio::test]
     async fn test_skip_notify_users() -> Result<()> {
-        let client = client();
-        let skip = skip_notify_users(&client).await?;
+        let bot = bot().await;
+        let skip = skip_notify_users(&bot).await?;
         assert!(skip.contains(&"SilkTork".to_string()));
         Ok(())
     }
 
     #[tokio::test]
     async fn test_extract_reviewer() -> Result<()> {
-        let client = client();
+        let bot = bot().await;
         // TODO: try some more esoteric signatures
-        let code = client.get("Talk:Port Adelaide Football Club/GA2").await?;
+        let page = bot.get_page("Talk:Port Adelaide Football Club/GA2");
+        let code = page.get_html().await?;
         let reviewer = extract_reviewer(&code);
         assert_eq!(reviewer.unwrap(), "Sportsfan77777".to_string());
         Ok(())
@@ -417,8 +412,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_extract_nominator() -> Result<()> {
-        let client = client();
-        let code = client.get_revision("Talk:Aluminium", 1005044564).await?;
+        let bot = bot().await;
+        let page = bot.get_page("Talk:Aluminium");
+        let code = page.get_revision_html(1005044564).await?;
         let nominator = extract_nominator(&code);
         assert_eq!(nominator.unwrap(), "R8R".to_string());
         Ok(())
@@ -426,8 +422,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_has_ganotice() -> Result<()> {
-        let client = client();
-        let code = client.get_revision("User_talk:R8R", 1005044565).await?;
+        let bot = bot().await;
+        let page = bot.get_page("User_talk:R8R");
+        let code = page.get_revision_html(1005044565).await?;
         assert!(has_ganotice(&code, "Aluminium", None));
         assert!(!has_ganotice(&code, "Copper", None));
         Ok(())
@@ -435,10 +432,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_existing_gans() -> Result<()> {
-        let client = client();
-        let code = client
-            .get_revision("Wikipedia:Good article nominations", 1007062898)
-            .await?;
+        let bot = bot().await;
+        let page = bot.get_page("Wikipedia:Good article nominations");
+        let code = page.get_revision_html(1007062898).await?;
         let gans = get_existing_gans(&code)?;
         {
             let gan = &gans[0];
