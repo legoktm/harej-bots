@@ -22,31 +22,26 @@
  *    Chris Grant - [[User:Chris G]] - Rewrote the bot.
  *    James Hare  - [[User:Harej]]   - Wrote the original bot.
  **/
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use chrono::prelude::*;
 use chrono::Duration;
 use hblib::{print_diff, setup_logging};
 use log::{debug, error, info};
-use mwbot::{Bot, Error, SaveOptions};
+use mwbot::{Bot, Error, Page, SaveOptions};
 use parsoid::prelude::*;
 use regex::Regex;
+use std::collections::HashMap;
 
 /// Extract all the currently transcluded MFDs
-async fn get_listed_mfds(code: &Wikicode) -> Result<Vec<String>> {
+fn get_listed_mfds(code: &Wikicode) -> Result<Vec<String>> {
     // Get all the MFDs transcluded on the page but not {{/Front matter}}
     let mfds = code
         .filter_templates()?
         .iter()
-        .filter_map(|temp| {
-            let name = temp.name();
-            if name.starts_with("Wikipedia:Miscellany for deletion")
+        .map(|temp| temp.name())
+        .filter(|name| {
+            name.starts_with("Wikipedia:Miscellany for deletion")
                 && name != "Wikipedia:Miscellany for deletion/Front matter"
-            {
-                // HACK: work around https://gitlab.com/legoktm/parsoid-rs/-/issues/10
-                Some(name.replace("%3F", "?"))
-            } else {
-                None
-            }
         })
         // Reverse so we process oldest to newest
         .rev()
@@ -54,10 +49,48 @@ async fn get_listed_mfds(code: &Wikicode) -> Result<Vec<String>> {
     Ok(mfds)
 }
 
-/// If the MfD is closed
-fn is_closed(code: &Wikicode) -> bool {
-    code.text_contents()
-        .contains("The following discussion is an archived debate")
+struct MfD {
+    page: Page,
+    code: Wikicode,
+    start: DateTime<Utc>,
+    close: Option<DateTime<Utc>>,
+}
+
+impl MfD {
+    /// If the MfD is closed
+    fn is_closed(&self) -> bool {
+        self.code
+            .text_contents()
+            .contains("The following discussion is an archived debate")
+    }
+
+    /// Move to "Old business" if more than 8 days old
+    fn is_old(&self) -> bool {
+        // The start time plus 8 days is less (older) than now
+        (self.start + Duration::days(8)) <= Utc::now()
+    }
+
+    /// Archive MFDs older than 18 hours
+    fn should_archive(&self) -> bool {
+        match self.close {
+            Some(end) => {
+                // The close time plus 18 hours is less (older) than now
+                (end + Duration::hours(18)) <= Utc::now()
+            }
+            None => false,
+        }
+    }
+
+    /// Find the result of the close
+    fn extract_result(&self) -> Option<String> {
+        // It's the second bold thing
+        let nodes = self.code.select("b");
+        nodes.get(1).map(|node| node.text_contents())
+    }
+
+    fn as_link(&self) -> WikiLink {
+        WikiLink::new(self.page.title(), &Wikicode::new_text(self.page.title()))
+    }
 }
 
 /// Given a string from the regex, turn it into a DateTime
@@ -76,25 +109,13 @@ fn days_in_month(year: i32, month: u32) -> i64 {
         .num_days()
 }
 
-/// Archive MFDs older than 18 hours
-fn should_archive(close_ts: &DateTime<Utc>) -> bool {
-    // The close time plus 18 hours is less (older) than now
-    (*close_ts + Duration::hours(18)) <= Utc::now()
-}
-
-/// Move to "Old business" if more than 8 days old
-fn is_old(start_ts: &DateTime<Utc>) -> bool {
-    // The start time plus 8 days is less (older) than now
-    (*start_ts + Duration::days(8)) <= Utc::now()
-}
-
 /// Format a date into the header
 fn make_header(date: &Date<Utc>) -> String {
     date.format("%B %-d, %Y").to_string()
 }
 
-/// Create a new archive page from scratch
-async fn create_archive(client: &ParsoidClient, ts: &DateTime<Utc>) -> Result<Wikicode> {
+/// Build a new archive page from scratch
+async fn build_archive(client: &ParsoidClient, ts: &DateTime<Utc>) -> Result<Wikicode> {
     let code = Wikicode::new(&Template::new_simple("TOCright").to_string());
     let days = days_in_month(ts.year(), ts.month());
     for day in (1..=days).rev() {
@@ -108,27 +129,15 @@ async fn create_archive(client: &ParsoidClient, ts: &DateTime<Utc>) -> Result<Wi
     Ok(code)
 }
 
-/// Find the result of the close
-fn extract_result(code: &Wikicode) -> Option<String> {
-    // It's the second bold thing
-    let nodes = code.select("b");
-    nodes.get(1).map(|node| node.text_contents())
-}
-
 /// Add the specified MfD to the archive page
-fn add_to_archive(
-    archive_code: &Wikicode,
-    start_ts: &DateTime<Utc>,
-    mfd: &str,
-    result: &Option<String>,
-) {
-    let date = make_header(&start_ts.date());
+fn add_to_archive(archive_code: &Wikicode, mfd: &MfD) {
+    let date = make_header(&mfd.start.date());
     for section in archive_code.iter_sections() {
         if let Some(heading) = section.heading() {
             if heading.text_contents() == date {
                 let line = Wikicode::new_node("li");
-                line.append(&WikiLink::new(mfd, &Wikicode::new_text(mfd)));
-                if let Some(result) = &result {
+                line.append(&mfd.as_link());
+                if let Some(result) = mfd.extract_result() {
                     line.append(&Wikicode::new_text(&format!(" ({})", result)));
                 }
                 match section.select_first("ul") {
@@ -149,15 +158,15 @@ fn add_to_archive(
 }
 
 /// Add a MfD to "Old business"
-fn add_to_old_business(code: &Section, start_ts: &Date<Utc>, mfd: &str) -> Result<()> {
-    let date = make_header(start_ts);
+fn add_to_old_business(code: &Section, mfd: &MfD) -> Result<()> {
+    let date = make_header(&mfd.start.date());
     // First check to make sure it's not already in the old business
     for temp in code.filter_templates()? {
-        if temp.name() == mfd {
+        if temp.name() == mfd.page.title() {
             return Ok(());
         }
     }
-    let template = Template::new_simple(mfd);
+    let template = Template::new_simple(mfd.page.title());
     // We can't use iter_sections() here because our newly inserted
     // header won't have <section> tags yet
     let headings: Vec<_> = code
@@ -181,9 +190,9 @@ fn add_to_old_business(code: &Section, start_ts: &Date<Utc>, mfd: &str) -> Resul
 }
 
 /// Remove a MfD from the current section
-fn remove_from_current(code: &Section, mfd: &str) -> Result<()> {
+fn remove_from_current(code: &Section, mfd: &MfD) -> Result<()> {
     for temp in code.filter_templates()? {
-        if temp.name() == mfd {
+        if temp.name() == mfd.page.title() {
             temp.detach();
             break;
         }
@@ -223,7 +232,8 @@ async fn run() -> Result<()> {
     let bot = Bot::from_default_config().await?;
     let mfd_page = bot.get_page("Wikipedia:Miscellany for deletion");
     let mfd_code = mfd_page.get_html().await?;
-    let mfds = get_listed_mfds(&mfd_code).await?;
+    let mfds = get_listed_mfds(&mfd_code)?;
+    let mut to_archive = vec![];
     for mfd in &mfds {
         debug!("Processing {}", mfd);
         let page = bot.get_page(mfd);
@@ -236,75 +246,93 @@ async fn run() -> Result<()> {
         // FIXME: we should look through history instead of parsing timestamps
         // If open, first_timestamp is start_ts. If closed, first_timestamp is close_ts
         let first_timestamp = parse_timestamp(&found[0][0])?;
-        if is_closed(&code) {
-            info!("{} is closed.", mfd);
-            let close_ts = first_timestamp;
-            let start_ts = parse_timestamp(&found[1][0])?;
-            debug!("close_ts = {}", close_ts);
-            debug!("start_ts = {}", start_ts);
-            let result = extract_result(&code);
-            if should_archive(&close_ts) {
-                info!("Going to archive {}", mfd);
-                let archive = bot.get_page(
-                    &start_ts
-                        .format("Wikipedia:Miscellany for deletion/Archived debates/%B %Y")
-                        .to_string(),
-                );
-
-                let archive_code = match page.get_html().await {
-                    Ok(code) => code,
-                    // Doesn't exist yet, create a new one
-                    Err(Error::PageDoesNotExist(_)) => {
-                        create_archive(bot.get_parsoid(), &start_ts).await?
-                    }
-                    Err(e) => return Err(anyhow!(e)),
-                };
-                // Add to archive page
-                add_to_archive(&archive_code, &start_ts, mfd, &result);
-                let new_wikitext = bot
-                    .get_parsoid()
-                    .transform_to_wikitext(&archive_code)
-                    .await?;
-                let original_wikitext = match archive.get_wikitext().await {
-                    Ok(text) => text,
-                    Err(Error::PageDoesNotExist(_)) => "".to_string(),
-                    Err(err) => return Err(err.into()),
-                };
-                info!("Diff of [[{}]]:", archive.title());
-                if print_diff(&original_wikitext, &new_wikitext) {
-                    archive
-                        .save(
-                            archive_code,
-                            &SaveOptions::summary(&format!("Archiving: [[{}]]", mfd)),
-                        )
-                        .await?;
-                    info!("Saved edit to [[{}]]", archive.title());
-                }
-                // Remove from WP:MfD
-                for temp in mfd_code.filter_templates()? {
-                    // HACK: work around https://gitlab.com/legoktm/parsoid-rs/-/issues/10
-                    if &temp.name().replace("%3F", "?") == mfd {
-                        temp.detach();
-                    }
-                }
-            }
-        } else if is_old(&first_timestamp) {
-            info!("Moving {} to Old business", mfd);
-            let start_ts = first_timestamp;
-            // Move under "Old business", optionally creating a heading if necessary
-            for section in mfd_code.iter_sections() {
-                if let Some(heading) = section.heading() {
-                    if heading.text_contents() == "Old business" {
-                        add_to_old_business(&section, &start_ts.date(), mfd)?;
-                        cleanup_empty_sections(&section);
-                    } else if heading.text_contents() == "Current discussions" {
-                        remove_from_current(&section, mfd)?;
-                        cleanup_empty_sections(&section);
+        let mut mfd = MfD {
+            page,
+            code,
+            start: first_timestamp,
+            close: None,
+        };
+        if mfd.is_closed() {
+            info!("{} is closed.", mfd.page.title());
+            // The first timestamp is actually the close message, and the
+            // second timestamp is the real opening one
+            mfd.close = Some(first_timestamp);
+            mfd.start = parse_timestamp(&found[1][0])?;
+            debug!("close_ts = {:?}", &mfd.close);
+            debug!("start_ts = {:?}", &mfd.start);
+            if mfd.should_archive() {
+                info!("Going to archive {}", mfd.page.title());
+                to_archive.push(mfd);
+            } else if mfd.is_old() {
+                info!("Moving {} to Old business", mfd.page.title());
+                // Move under "Old business", optionally creating a heading if necessary
+                for section in mfd_code.iter_sections() {
+                    if let Some(heading) = section.heading() {
+                        if heading.text_contents() == "Old business" {
+                            add_to_old_business(&section, &mfd)?;
+                            cleanup_empty_sections(&section);
+                        } else if heading.text_contents() == "Current discussions" {
+                            remove_from_current(&section, &mfd)?;
+                            cleanup_empty_sections(&section);
+                        }
                     }
                 }
             }
         }
     }
+
+    let mut sorted_to_archive: HashMap<String, Vec<MfD>> = HashMap::new();
+    for mfd in to_archive {
+        let title = mfd
+            .start
+            .format("Wikipedia:Miscellany for deletion/Archived debates/%B %Y")
+            .to_string();
+        sorted_to_archive.entry(title).or_default().push(mfd);
+    }
+
+    for (archive_title, mfds) in sorted_to_archive.into_iter() {
+        let archive = bot.get_page(&archive_title);
+        let mut summary = vec![];
+        let archive_code = match archive.get_html().await {
+            Ok(code) => code,
+            Err(Error::PageDoesNotExist(_)) => {
+                build_archive(bot.get_parsoid(), &mfds[0].start).await?
+            }
+            Err(err) => return Err(err.into()),
+        };
+        for mfd in mfds {
+            // Add to archive page
+            add_to_archive(&archive_code, &mfd);
+            // Remove from WP:MfD
+            for temp in mfd_code.filter_templates()? {
+                if temp.name() == mfd.page.title() {
+                    temp.detach();
+                }
+            }
+            summary.push(format!("[[{}]]", mfd.page.title()));
+        }
+
+        let new_wikitext = bot
+            .get_parsoid()
+            .transform_to_wikitext(&archive_code)
+            .await?;
+        let original_wikitext = match archive.get_wikitext().await {
+            Ok(text) => text,
+            Err(Error::PageDoesNotExist(_)) => "".to_string(),
+            Err(err) => return Err(err.into()),
+        };
+        info!("Diff of [[{}]]:", archive.title());
+        if print_diff(&original_wikitext, &new_wikitext) {
+            archive
+                .save(
+                    archive_code,
+                    &SaveOptions::summary(&format!("Archiving: {}", summary.join(", "))),
+                )
+                .await?;
+            info!("Saved edit to [[{}]]", archive.title());
+        }
+    }
+
     // Finally, let's cleanup the empty sections we left behind
     for section in mfd_code.iter_sections() {
         if let Some(heading) = section.heading() {
@@ -328,12 +356,19 @@ async fn run() -> Result<()> {
             .await?;
         info!("Saved edit to [[Wikipedia:Miscellany for deletion]]");
     }
+
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
+
+    async fn bot() -> Bot {
+        Bot::from_path(Path::new("mwbot-test.toml")).await.unwrap()
+    }
+
     #[test]
     fn test_days_in_month() {
         // January
@@ -344,5 +379,17 @@ mod tests {
         assert_eq!(29, days_in_month(2020, 2));
         // April
         assert_eq!(30, days_in_month(2021, 4));
+    }
+
+    #[tokio::test]
+    async fn test_get_listed_mfds() {
+        let bot = bot().await;
+        let page = bot.get_page("Wikipedia:Miscellany for deletion");
+        let code = page.get_revision_html(1017775433).await.unwrap();
+        let mfds = get_listed_mfds(&code).unwrap();
+        assert!(mfds.contains(
+            &"Wikipedia:Miscellany for deletion/Draft:Why do we sometimes disagree about colors?"
+                .to_string()
+        ))
     }
 }
