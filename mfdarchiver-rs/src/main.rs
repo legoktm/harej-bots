@@ -392,4 +392,38 @@ mod tests {
                 .to_string()
         ))
     }
+
+    #[tokio::test]
+    async fn test_mfd() {
+        let bot = bot().await;
+        let page = bot.get_page(
+            "Wikipedia:Miscellany for deletion/Draft:Why do we sometimes disagree about colors?",
+        );
+        let code = page.get_revision_html(1016680706).await.unwrap();
+        let mut mfd = MfD {
+            page,
+            code,
+            start: Utc::now(),
+            close: None,
+        };
+        assert!(!mfd.is_closed());
+        assert!(!mfd.is_old());
+        mfd.code = mfd.page.get_revision_html(1017953041).await.unwrap();
+        assert!(mfd.is_closed());
+        assert_eq!(mfd.extract_result(), Some("Delete".to_string()));
+        // Open for 7 days, not yet old
+        mfd.start = mfd.start - Duration::days(7);
+        assert!(!mfd.is_old());
+        // Open for 9 days, now old
+        mfd.start = mfd.start - Duration::days(2);
+        assert!(mfd.is_old());
+        // No close time, shouldn't archive.
+        assert!(!mfd.should_archive());
+        mfd.close = Some(Utc::now());
+        // Close time is now, shouldn't archive
+        assert!(!mfd.should_archive());
+        // Closed 19 hours ago, should archive
+        mfd.close = Some(Utc::now() - Duration::hours(19));
+        assert!(mfd.should_archive());
+    }
 }
