@@ -218,19 +218,20 @@ struct Nomination {
 
 impl Nomination {
     fn new_from_template(temp: &Template) -> Result<Self> {
-        let name = temp
-            .get_param("1")
+        let params = temp.get_params();
+        let name = params
+            .get("1")
             .ok_or_else(|| anyhow!("No title specified in GANEntry"))?;
-        let subpage: u32 = temp
-            .get_param("2")
+        let subpage: u32 = params
+            .get("2")
             .ok_or_else(|| anyhow!("No title specified in GANEntry"))?
             .parse()?;
-        let exists = match temp.get_param("exists") {
+        let exists = match params.get("exists") {
             Some(val) => val == "yes",
             None => false,
         };
         Ok(Self {
-            name,
+            name: name.to_string(),
             subpage,
             exists,
         })
