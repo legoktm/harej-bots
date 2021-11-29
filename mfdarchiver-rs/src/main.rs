@@ -22,7 +22,7 @@
  *    Chris Grant - [[User:Chris G]] - Rewrote the bot.
  *    James Hare  - [[User:Harej]]   - Wrote the original bot.
  **/
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use chrono::prelude::*;
 use chrono::Duration;
 use hblib::{print_diff, setup_logging};
@@ -130,7 +130,7 @@ async fn build_archive(client: &ParsoidClient, ts: &DateTime<Utc>) -> Result<Wik
 }
 
 /// Add the specified MfD to the archive page
-fn add_to_archive(archive_code: &Wikicode, mfd: &MfD) {
+fn add_to_archive(archive_code: &Wikicode, mfd: &MfD) -> Result<()> {
     let date = make_header(&mfd.start.date());
     for section in archive_code.iter_sections() {
         if let Some(heading) = section.heading() {
@@ -152,9 +152,15 @@ fn add_to_archive(archive_code: &Wikicode, mfd: &MfD) {
                         section.append(&ul);
                     }
                 }
+                return Ok(());
             }
         }
     }
+    Err(anyhow!(
+        "Unable to add {} to the archive, opened at {}",
+        mfd.page.title(),
+        mfd.start
+    ))
 }
 
 /// Add a MfD to "Old business"
@@ -194,10 +200,10 @@ fn remove_from_current(code: &Section, mfd: &MfD) -> Result<()> {
     for temp in code.filter_templates()? {
         if temp.name() == mfd.page.title() {
             temp.detach();
-            break;
+            return Ok(());
         }
     }
-    Ok(())
+    Err(anyhow!("Unable to find {} in current", mfd.page.title()))
 }
 
 /// Aside from the heading, is the section empty? Then remove it.
@@ -302,7 +308,7 @@ async fn run() -> Result<()> {
         };
         for mfd in mfds {
             // Add to archive page
-            add_to_archive(&archive_code, &mfd);
+            add_to_archive(&archive_code, &mfd)?;
             // Remove from WP:MfD
             for temp in mfd_code.filter_templates()? {
                 if temp.name() == mfd.page.title() {
