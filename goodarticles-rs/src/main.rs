@@ -365,8 +365,8 @@ async fn run() -> Result<()> {
                 if !has_ganotice(&nom_talk_code, &title, None) {
                     // Yeah, wikitext sucks but it's too annoying to build with Parsoid. Maybe we need a new wrapper around GANotice.
                     let message = format!(
-                        "{{{{subst:GANotice|article={0}|days=7}}}} <small>Message delivered by [[User:Legobot|]], on behalf of [[User:{1}|]]</small> -- {{{{subst:user0|User={1}}}}} ~~~~~",
-                        title, reviewer
+                        "{{{{subst:GANotice|article={0}|days=7|reviewlink={1}}}}} <small>Message delivered by [[User:Legobot|]], on behalf of [[User:{1}|]]</small> -- {{{{subst:user0|User={1}}}}} ~~~~~",
+                        title, reviewpage.title(), reviewer
                     );
                     let summary = format!("Your [[WP:GA|GA]] nomination of [[{}]]", title);
                     // TODO: {{nobots}} check
