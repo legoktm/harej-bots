@@ -598,7 +598,7 @@ foreach ($articles as $article) {
 			) {
 				$sig = $currentNom->getVar('reviewer');
 				$sig2 = "-- {{subst:user0|User=$sig}} ~~~~~";
-				$msg = "{{subst:GANotice|article=$currentNom|days=7}} <small>Message delivered by [[User:$botuser|$botuser]], on behalf of [[User:$sig|$sig]]</small> $sig2";
+				$msg = "{{subst:GANotice|article=$currentNom|days=7|reviewpage=$reviewpage}} <small>Message delivered by [[User:$botuser|$botuser]], on behalf of [[User:$sig|$sig]]</small> $sig2";
 				if ( $wiki->nobots( $noms_talk_page, 'GA bot', $noms_talk_page->content() ) ) {
 					$noms_talk_page->edit($noms_talk_page->content() . "\n\n$msg","/* Your [[WP:GA|GA]] nomination of [[" . $currentNom . "]] */ new section");
 				}
