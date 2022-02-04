@@ -209,6 +209,12 @@ fn remove_from_current(code: &Section, mfd: &MfD) -> Result<()> {
 /// Aside from the heading, is the section empty? Then remove it.
 fn cleanup_empty_sections(code: &Section) {
     for section in code.iter_sections() {
+        if let Some(heading) = section.heading() {
+            // If today's header is empty don't try to remove it
+            if heading.text_contents() == make_header(&Utc::today()) {
+                continue;
+            }
+        }
         let mut children: Vec<_> = section
             .children()
             .map(|node| node.text_contents())
