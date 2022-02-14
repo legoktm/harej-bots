@@ -206,6 +206,22 @@ fn remove_from_current(code: &Section, mfd: &MfD) -> Result<()> {
     Err(anyhow!("Unable to find {} in current", mfd.page.title()))
 }
 
+/// Check whether an MfD is already in == Old business ==
+fn is_in_old_business(code: &Wikicode, mfd: &MfD) -> Result<bool> {
+    for section in code.iter_sections() {
+        if let Some(heading) = section.heading() {
+            if heading.text_contents() == "Old business" {
+                for temp in section.filter_templates()? {
+                    if temp.name() == mfd.page.title() {
+                        return Ok(true);
+                    }
+                }
+            }
+        }
+    }
+    Ok(false)
+}
+
 /// Aside from the heading, is the section empty? Then remove it.
 fn cleanup_empty_sections(code: &Section) {
     for section in code.iter_sections() {
@@ -275,7 +291,7 @@ async fn run() -> Result<()> {
             if mfd.should_archive() {
                 info!("Going to archive {}", mfd.page.title());
                 to_archive.push(mfd);
-            } else if mfd.is_old() {
+            } else if mfd.is_old() && !is_in_old_business(&mfd_code, &mfd)? {
                 info!("Moving {} to Old business", mfd.page.title());
                 // Move under "Old business", optionally creating a heading if necessary
                 for section in mfd_code.iter_sections() {
@@ -363,7 +379,9 @@ async fn run() -> Result<()> {
         mfd_page
             .save(
                 mfd_code,
-                &SaveOptions::summary("Removing archived MfD debates"),
+                &SaveOptions::summary(
+                    "Removing archived MfD debates and/or moving to old business",
+                ),
             )
             .await?;
         info!("Saved edit to [[Wikipedia:Miscellany for deletion]]");
