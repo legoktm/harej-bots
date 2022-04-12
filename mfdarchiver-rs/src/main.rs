@@ -190,8 +190,14 @@ fn add_to_old_business(code: &Section, mfd: &MfD) -> Result<()> {
     }
     // We did not find our date's header, boo.
     let heading = Heading::new(3, &Wikicode::new_text(&date))?;
-    headings[0].insert_before(&heading);
-    headings[0].insert_before(&template);
+    if let Some(first_heading) = headings.get(0) {
+        first_heading.insert_before(&heading);
+        first_heading.insert_before(&template);
+    } else {
+        // There are no sub-headers at all, so append at the bottom of the section
+        code.append(&heading);
+        code.append(&template);
+    }
     Ok(())
 }
 
@@ -263,13 +269,17 @@ async fn run() -> Result<()> {
     let mfds = get_listed_mfds(&mfd_code)?;
     let mut to_archive = vec![];
     for mfd in &mfds {
-        debug!("Processing {}", mfd);
+        info!("Processing {}", mfd);
         let page = bot.get_page(mfd);
         let code = page.get_html().await?;
         let text = code.text_contents();
         // Extract the timestamps out of this discussion
         let ts_re = Regex::new(r"\d\d:\d\d, \d?\d \w+ \d\d\d\d \(UTC\)").unwrap();
         let found: Vec<_> = ts_re.captures_iter(&text).collect();
+        if found.len() < 2 {
+            // Malformed, skip for now
+            continue;
+        }
         // TODO: will panic if we don't find the timestamps
         // FIXME: we should look through history instead of parsing timestamps
         // If open, first_timestamp is start_ts. If closed, first_timestamp is close_ts
