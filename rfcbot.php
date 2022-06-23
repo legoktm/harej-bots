@@ -146,10 +146,10 @@ foreach ($transclusions as $page) {
 		foreach ($parts[0] as $part) {
 			$newtag .= $part . "|";
 		}
-		$newtag		= str_replace("{{rfc|", "", $newtag);
+		$newtag		= str_replace("{{Request for comment|", "", $newtag);
 		$newtag		= str_replace("{{rfctag|", "", $newtag);
 		$newtag		= str_replace("}}", "", $newtag);
-		$newtag		= "{{rfc|" . $newtag . "}}\n\n";
+		$newtag		= "{{Request for comment|" . $newtag . "}}\n\n";
 		$newtag		= str_replace("|}}", "}}", $newtag);
 		$newtag		= str_replace("|art", "|media", $newtag);
 		$content	= str_replace($fix, $newtag, $content);
