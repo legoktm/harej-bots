@@ -351,7 +351,7 @@ foreach ($all_expired as $rfcid) {
 }
 $all_expired = $new_all_expired;
 
-$rfclisting = "{{navbox\n| name = {{subst:FULLPAGENAME}}\n| title = Requests for comment\n| basestyle = background: #BDD8FF;\n| liststyle = line-height: 220%;\n| oddstyle = background: #EEEEEE;\n| evenstyle = background: #DEDEDE;\n";
+$rfclisting = "{{navbox\n| name = {{subst:FULLPAGENAME}}\n| title = Requests for comment\n| state = {{{state|plain}}}\n| basestyle = background: #BDD8FF;\n| liststyle = line-height: 220%;\n| oddstyle = background: #EEEEEE;\n| evenstyle = background: #DEDEDE;\n";
 $counter = 0;
 
 foreach ($RFC_pagetitles as $RFCcategory => $RFCpage) {
