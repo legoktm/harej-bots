@@ -126,6 +126,11 @@ $transclusions = $wiki->getTransclusions("Template:Rfc");
 foreach ($transclusions as $page) {
 	$rfcid = null;
 
+	if ($page==="Template:Rfc") {
+		// Ignore self-transclusions of the template
+		continue;
+	}
+
 	// Get the page content
 	$page = $wiki->page($page);
 	$content = $page->content();
