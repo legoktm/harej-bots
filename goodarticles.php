@@ -688,8 +688,15 @@ while ($row = $selectQuery->fetch()) {
 	$status = null;
 	
 	$contents = $wiki->getpage("Talk:" . $row['page']);
-	if ( (preg_match("/\|\s?currentstatus\s?=\s?GA/i", $contents) || preg_match("/\{{2}\s?GA(?! nominee)/", $contents)) && !preg_match("/\{{2}\s?FailedGA/i", $contents)) {
+
+	$hasCurrentStatusGA = preg_match("/\|\s?currentstatus\s?=\s?(?:FFA\/)?GA/i", $contents);
+	$hasGANomineeTemplate = preg_match("/\{{2}\s?GA(?! nominee)/", $contents);
+	$doesNotHaveFailedGATemplate = !preg_match("/\{{2}\s?FailedGA/i", $contents);
+	$isPass = ($hasCurrentStatusGA || $hasGANomineeTemplate) && $doesNotHaveFailedGATemplate;
+	if ($isPass) {
 		$editsummary->passed($row['page'],$row['subtopic']);
+
+		// write {{Good article}} on article page, if needed
 		$article_content = $wiki->getpage($row['page']);
 		if(!preg_match("/\{\{good( |_)article\}\}/i", $article_content)) {
 			$article_content = "{{good article}}\n" . $article_content;
@@ -698,6 +705,7 @@ while ($row = $selectQuery->fetch()) {
 		unset($article_content);
 		$status = 'passed';
 		
+		// leave message on nominator's talk page, if needed
 		$noms_talk_page = $wiki2->page("User talk:" . $row['nominator']);
 		$noms_talk_page->resolveRedirects();
 		if (substr($noms_talk_page,0,strlen("User talk"))=="User talk"
