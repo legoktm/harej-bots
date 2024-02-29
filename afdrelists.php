@@ -80,7 +80,7 @@ $submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debat
 $submission .= $relists["B"] . "\n{{end}}\n";
 $submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Society topics)|Society topics]]'''}}\n";
 $submission .= $relists["S"] . "\n{{end}}\n";
-$submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Web or internet)|Web or internet]]'''}}\n";
+$submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Web or Internet)|Web or Internet]]'''}}\n";
 $submission .= $relists["W"] . "\n{{end}}\n";
 $submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Games or sports)|Games or sports]]'''}}\n";
 $submission .= $relists["G"] . "\n{{end}}\n";
