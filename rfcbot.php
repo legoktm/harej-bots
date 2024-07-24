@@ -122,11 +122,19 @@ if(mysqli_connect_errno()) {
 $rfcid_list = array();
 
 // Step 1: Check for transclusions
-$transclusions = $wiki->getTransclusions("Template:Rfc");
+// To (hopefully) bridge the gap for when {{rfc}} is moved to an expanded title (see https://w.wiki/Ak3j),
+// get an array of transclusions for both template names and combine the two.
+$transclusionsFromOldTitle = $wiki->getTransclusions("Template:Rfc");
+$transclusionsFromNewTitle = $wiki->getTransclusions("Template:Request for comment");
+
+// Merge the arrays of transclusions, and remove any duplicate page titles
+$transclusions = array_merge($transclusionsFromOldTitle, $transclusionsFromNewTitle);
+$transclusions = array_unique($transclusions);
+	
 foreach ($transclusions as $page) {
 	$rfcid = null;
 
-	if ($page==="Template:Rfc") {
+	if ($page==="Template:Rfc" || $page==="Template:Request for comment") {
 		// Ignore self-transclusions of the template
 		continue;
 	}
@@ -144,15 +152,17 @@ foreach ($transclusions as $page) {
 	}
 
 	// Syntax Correction. RFC templates with common errors are corrected and then saved on the wiki.
-	preg_match_all("/(\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))\s?[^}]*\}{2}(\n|,| )*){2,}/i", $content, $fixes);
+	preg_match_all("/(\{{2}\s?R(fc(tag)?|equest(forcomment| for comment))(?!\s+(top|bottom))\s?[^}]*\}{2}(\n|,| )*){2,}/i", $content, $fixes);
 	foreach ($fixes[0] as $fix) {
-		preg_match_all("/(?=\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))\s?\|\s?)[^}]*/i", $fix, $parts);
+		preg_match_all("/(?=\{{2}\s?R(fc(tag)?|equest(forcomment| for comment))(?!\s+(top|bottom))\s?\|\s?)[^}]*/i", $fix, $parts);
 		$newtag = "";
 		foreach ($parts[0] as $part) {
 			$newtag .= $part . "|";
 		}
-		$newtag		= str_replace("{{rfc|", "", $newtag);
-		$newtag		= str_replace("{{rfctag|", "", $newtag);
+		$newtag		= str_ireplace("{{rfc|", "", $newtag);
+		$newtag		= str_ireplace("{{rfctag|", "", $newtag);
+		$newtag 	= str_ireplace("{{requestforcomment|", "", $newtag);
+		$newtag 	= str_ireplace("{{request for comment|", "", $newtag);
 		$newtag		= str_replace("}}", "", $newtag);
 		$newtag		= "{{rfc|" . $newtag . "}}\n\n";
 		$newtag		= str_replace("|}}", "}}", $newtag);
@@ -165,7 +175,7 @@ foreach ($transclusions as $page) {
 	// Step 2: Seeding RFC IDs.
 	// Before we read the RFC IDs and match them up to a title, description, etc.,
 	// we want to make sure each RFC template has a corresponding RFC ID.
-	preg_match_all("/\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))\s?[^}]*\}{2}/i", $content, $matches);
+	preg_match_all("/\{{2}\s?R(fc(tag)?|equest(forcomment| for comment))(?!\s+(top|bottom))\s?[^}]*\}{2}/i", $content, $matches);
 	foreach ($matches[0] as $match) {
 		if (strpos($match, "|rfcid=") === false) { // if the rfcid is not found within an RFC template
 			$rfcid = generateRfcId(); # a seven-character random string with capital letters and digits
@@ -182,13 +192,13 @@ foreach ($transclusions as $page) {
 	}
 	
 	// Step 3: Check for RFC templates
-	preg_match_all("/\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))\s?[^}]*\}{2}/i", $content, $match);
+	preg_match_all("/\{{2}\s?R(fc(tag)?|equest(forcomment| for comment))(?!\s+(top|bottom))\s?[^}]*\}{2}/i", $content, $match);
 	for ($result=0; $result < count($match[0]); $result++) { # For each result on a page
 		//Get the details
 		
 		// Category
-		preg_match_all("/\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))[^2]\s?[^}]*\}{2}/i", $content, $m);
-		$categorymeta = preg_replace("/\{*\s?(Rfc(?!id)(tag)?)\s?\|?\s?(1=)?\s?/i", "", $m[0][$result]);
+		preg_match_all("/\{{2}\s?R(fc(tag)?|equest(forcomment| for comment))(?!\s+(top|bottom))[^2]\s?[^}]*\}{2}/i", $content, $m);
+		$categorymeta = preg_replace("/\{*\s?(R(fc(?!id)(tag)?|equest(forcomment| for comment)))\s?\|?\s?(1=)?\s?/i", "", $m[0][$result]);
 		
 		// An RFC can be forced to have a certain timestamp with the time= parameter in RFC template.
 		unset($timestamp);
@@ -202,8 +212,8 @@ foreach ($transclusions as $page) {
 		// Description and Timestamp
 		if (!isset($timestamp)) {
 			$description = preg_replace("/<!--[^\n]+-->/","",$content);
-			preg_match_all("/\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))\s?[^}]*\}{2}(.|\n)*?([0-2]\d):([0-5]\d),\s(\d{1,2})\s(\w*)\s(\d{4})\s\(UTC\)/im", $description, $m);
-			$description = preg_replace("/\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))\s?[^}]*\}{2}\n*/i", "", $m[0][$result]); // get rid of the RFC template
+			preg_match_all("/\{{2}\s?R(fc(tag)?|equest(forcomment| for comment))(?!\s+(top|bottom))\s?[^}]*\}{2}(.|\n)*?([0-2]\d):([0-5]\d),\s(\d{1,2})\s(\w*)\s(\d{4})\s\(UTC\)/im", $description, $m);
+			$description = preg_replace("/\{{2}\s?R(fc(tag)?|equest(forcomment| for comment))(?!\s+(top|bottom))\s?[^}]*\}{2}\n*/i", "", $m[0][$result]); // get rid of the RFC template
 			$description = preg_replace("/={2,}\n+/", "'''\n\n", $description); // replace section headers with boldness
 			$description = preg_replace("/\n+={2,}/", "\n\n'''", $description);
 			//$description = preg_replace("/\{\{[^}]+\}\}/", "", $description); // remove any other templates
@@ -237,7 +247,7 @@ foreach ($transclusions as $page) {
 		// Step 4: Inspecting for expiration. Something that's expired gets removed; something that's not expired gets moved up to the big leagues! Whee!
 		if (time() - $timestamp > 2592000 && $timestamp != "" && !preg_match('/<!--\s*RFCBot\s+Ignore\s+Expired\s*-->/i',$content) || preg_match("/\/Archive \d+/", $page)) {
 			echo "RFC expired. Removing tag.\n";
-			$content = preg_replace("/\{\{rfc(tag)?(?!\s+(top|bottom))\s*(\|[a-z0-9\., ]*)*\s*\|rfcid=$rfcid\s*(\|[a-z0-9\., \|]*)*\s*\}\}(\n|\s)?/i", "", $content);
+			$content = preg_replace("/\{\{r(fc(tag)?|equest(forcomment| for comment))(?!\s+(top|bottom))\s*(\|[a-z0-9\., ]*)*\s*\|rfcid=$rfcid\s*(\|[a-z0-9\., \|]*)*\s*\}\}(\n|\s)?/i", "", $content);
 			
 			echo "Editing [[$page]]\n";
 			$page->edit($content,"Removing expired RFC template.");
