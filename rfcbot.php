@@ -236,8 +236,11 @@ foreach ($transclusions as $page) {
 		
 		// Step 4: Inspecting for expiration. Something that's expired gets removed; something that's not expired gets moved up to the big leagues! Whee!
 		if (time() - $timestamp > 2592000 && $timestamp != "" && !preg_match('/<!--\s*RFCBot\s+Ignore\s+Expired\s*-->/i',$content) || preg_match("/\/Archive \d+/", $page)) {
-			echo "RFC expired. Removing tag.\n";
-			$content = preg_replace("/\{\{rfc(tag)?(?!\s+(top|bottom))\s*(\|[a-z0-9\., ]*)*\s*\|rfcid=$rfcid\s*(\|[a-z0-9\., \|]*)*\s*\}\}(\n|\s)?/i", "", $content);
+			echo "RFC expired. Removing tag; leaving anchor.\n";
+
+			$rfcAnchor = "{{anchor|rfc_" . $rfcid . "}}";
+			$content = preg_replace("/\{\{rfc(tag)?(?!\s+(top|bottom))\s*(\|[a-z0-9\., ]*)*\s*\|rfcid=$rfcid\s*(\|[a-z0-9\., \|]*)*\s*\}\}(\n|\s)?/i", $rfcAnchor, $content);
+			
 			
 			echo "Editing [[$page]]\n";
 			$page->edit($content,"Removing expired RFC template.");
