@@ -238,7 +238,7 @@ foreach ($transclusions as $page) {
 		if (time() - $timestamp > 2592000 && $timestamp != "" && !preg_match('/<!--\s*RFCBot\s+Ignore\s+Expired\s*-->/i',$content) || preg_match("/\/Archive \d+/", $page)) {
 			echo "RFC expired. Removing tag; leaving anchor.\n";
 
-			$rfcAnchor = "{{anchor|rfc_" . $rfcid . "}}";
+			$rfcAnchor = "{{anchor|rfc_" . $rfcid . "}}\n";
 			$content = preg_replace("/\{\{rfc(tag)?(?!\s+(top|bottom))\s*(\|[a-z0-9\., ]*)*\s*\|rfcid=$rfcid\s*(\|[a-z0-9\., \|]*)*\s*\}\}(\n|\s)?/i", $rfcAnchor, $content);
 			
 			
