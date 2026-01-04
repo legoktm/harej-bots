@@ -103,7 +103,7 @@ $toolserver_username = $toolserver_mycnf['user'];
 $toolserver_password = $toolserver_mycnf['password'];
 
 echo "Connecting to tools-db\n";
-$rfcdb = new mysqli('tools-db',$toolserver_username,$toolserver_password,'s51043__legobot');
+$rfcdb = new mysqli('tools.db.svc.wikimedia.cloud',$toolserver_username,$toolserver_password,'s51043__rfcbot_p');
 if(mysqli_connect_errno()) {
 	echo "Connection Failed: " . mysqli_connect_errno();
 	die();
@@ -113,7 +113,7 @@ $replica_mycnf = parse_ini_file("/data/project/legobot/replica.my.cnf");
 $replica_username = $replica_mycnf['user'];
 $replica_password = $replica_mycnf['password'];
 
-$enwikidb = new mysqli('enwiki.labsdb',$replica_username,$replica_password,'enwiki_p');
+$enwikidb = new mysqli('enwiki.analytics.db.svc.wikimedia.cloud',$replica_username,$replica_password,'enwiki_p');
 if(mysqli_connect_errno()) {
 	echo "Connection Failed: " . mysqli_connect_errno();
 	die();
