@@ -72,29 +72,29 @@ for ($i = 0; $i < count($transcludes); $i++) {
 }
 
 $submission = "";
-$submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Media and music)|Media and music]]'''}}\n";
+$submission .= "{{User:Harej/coordcollapsetop|'''[[:Category:AfD debates (Media and music)|Media and music]]'''}}\n";
 $submission .= $relists["M"] . "\n{{end}}\n";
-$submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Organisation, corporation, or product)|Organisation, corporation, or product]]'''}}\n";
+$submission .= "{{User:Harej/coordcollapsetop|'''[[:Category:AfD debates (Organisation, corporation, or product)|Organisation, corporation, or product]]'''}}\n";
 $submission .= $relists["O"] . "\n{{end}}\n";
-$submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Biographical)|Biographical]]'''}}\n";
+$submission .= "{{User:Harej/coordcollapsetop|'''[[:Category:AfD debates (Biographical)|Biographical]]'''}}\n";
 $submission .= $relists["B"] . "\n{{end}}\n";
-$submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Society topics)|Society topics]]'''}}\n";
+$submission .= "{{User:Harej/coordcollapsetop|'''[[:Category:AfD debates (Society topics)|Society topics]]'''}}\n";
 $submission .= $relists["S"] . "\n{{end}}\n";
-$submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Web or Internet)|Web or Internet]]'''}}\n";
+$submission .= "{{User:Harej/coordcollapsetop|'''[[:Category:AfD debates (Web or Internet)|Web or Internet]]'''}}\n";
 $submission .= $relists["W"] . "\n{{end}}\n";
-$submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Games or sports)|Games or sports]]'''}}\n";
+$submission .= "{{User:Harej/coordcollapsetop|'''[[:Category:AfD debates (Games or sports)|Games or sports]]'''}}\n";
 $submission .= $relists["G"] . "\n{{end}}\n";
-$submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Science and technology)|Science and technology]]'''}}\n";
+$submission .= "{{User:Harej/coordcollapsetop|'''[[:Category:AfD debates (Science and technology)|Science and technology]]'''}}\n";
 $submission .= $relists["T"] . "\n{{end}}\n";
-$submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Fiction and the arts)|Fiction and the arts]]'''}}\n";
+$submission .= "{{User:Harej/coordcollapsetop|'''[[:Category:AfD debates (Fiction and the arts)|Fiction and the arts]]'''}}\n";
 $submission .= $relists["F"] . "\n{{end}}\n";
-$submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Places and transportation)|Places and transportation]]'''}}\n";
+$submission .= "{{User:Harej/coordcollapsetop|'''[[:Category:AfD debates (Places and transportation)|Places and transportation]]'''}}\n";
 $submission .= $relists["P"] . "\n{{end}}\n";
-$submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Indiscernible or unclassifiable topic)|Indiscernible or unclassifiable topic]]'''}}\n";
+$submission .= "{{User:Harej/coordcollapsetop|'''[[:Category:AfD debates (Indiscernible or unclassifiable topic)|Indiscernible or unclassifiable topic]]'''}}\n";
 $submission .= $relists["I"] . "\n{{end}}\n";
-//$submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Nominator unsure of category)|Nominator unsure of category]]'''}}\n";
+//$submission .= "{{User:Harej/coordcollapsetop|'''[[:Category:AfD debates (Nominator unsure of category)|Nominator unsure of category]]'''}}\n";
 //$submission .= $relists["?"] . "\n{{end}}\n";
-$submission .= "{{User:Harej/coordcollapsetop|c=#BDD8FF|'''[[:Category:AfD debates (Not yet sorted)|Not yet sorted]]'''}}\n";
+$submission .= "{{User:Harej/coordcollapsetop|'''[[:Category:AfD debates (Not yet sorted)|Not yet sorted]]'''}}\n";
 $submission .= $relists["U"] . "\n{{end}}";
 
 $objwiki->edit("Wikipedia:Dashboard/Relisted AfD debates",$submission,"Updating AFD relists",false,true);
