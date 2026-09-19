@@ -3,7 +3,7 @@
 
 /** rfcbot.php - Automatic update of Wikipedia RFC lists
  *  (c) 2011 Chris Grant and others - http://en.wikipedia.org/wiki/User:Chris_G
- *	
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -17,7 +17,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   
+ *
  *  Developers (add yourself here if you worked on the code):
  *    Chris Grant - [[User:Chris G]]  - Completely rewrote the code
  *    James Hare  - [[User:Harej]]    - Wrote the orignial bot
@@ -37,7 +37,7 @@ function generateRfcId ($tries=0) {
 		die();
 	}
 	$tempid = substr(strtoupper(md5(rand())), 0, 7);
-	
+
 	$return='';
 	$rfcSelect = $rfcdb->prepare("SELECT count(rfc_id) FROM rfc WHERE rfc_id=?;");
 	$rfcSelect->bind_param("s",$tempid);
@@ -45,7 +45,7 @@ function generateRfcId ($tries=0) {
 	$rfcSelect->bind_result($return);
 	$rfcSelect->fetch();
 	$rfcSelect->close();
-	
+
 	if ($return>0) {
 		generateRfcId($tries);
 	} else {
@@ -161,7 +161,7 @@ foreach ($transclusions as $page) {
 		echo "Editing [[$page]]\n";
 		$page->edit($content,"Fixing RFC template syntax.");
 	}
-	
+
 	// Step 2: Seeding RFC IDs.
 	// Before we read the RFC IDs and match them up to a title, description, etc.,
 	// we want to make sure each RFC template has a corresponding RFC ID.
@@ -173,19 +173,19 @@ foreach ($transclusions as $page) {
 			$content = str_replace("}}|rfcid", "|rfcid", $content);
 			echo "Editing [[$page]]\n";
 			$page->edit($content,"Adding RFC ID.");
-			
+
 			$insertId = $rfcdb->prepare("INSERT INTO `rfc` (`rfc_id`, `rfc_page`, `rfc_contacted`) VALUES (?, ?, 0);");
 			$insertId->bind_param("ss",$rfcid,$page);
 			$insertId->execute();
 			$insertId->close();
 		}
 	}
-	
+
 	// Step 3: Check for RFC templates
 	preg_match_all("/\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))\s?[^}]*\}{2}/i", $content, $match);
 	for ($result=0; $result < count($match[0]); $result++) { # For each result on a page
 		//Get the details
-		
+
 		// Category
 		preg_match_all("/\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))[^2]\s?[^}]*\}{2}/i", $content, $m);
 		$categorymeta = preg_replace("/\{*\s?(Rfc(?!id)(tag)?)\s?\|?\s?(1=)?\s?/i", "", $m[0][$result]);
@@ -198,7 +198,7 @@ foreach ($transclusions as $page) {
 			$prettytimestamp = str_replace("}", "", $prettytimestamp);
 			$timestamp = strtotime($prettytimestamp);
 		}
-		
+
 		// Description and Timestamp
 		if (!isset($timestamp)) {
 			$description = preg_replace("/<!--[^\n]+-->/","",$content);
@@ -213,7 +213,7 @@ foreach ($transclusions as $page) {
 		} else {
 			$description = $prettytimestamp;
 		}
-		
+
 		// RFC ID
 		preg_match("/(\|)?rfcid=\s*([A-z0-9]*)/", $categorymeta, $rfcidcheck);
 		if ($rfcidcheck[0] != "" || isset($rfcidcheck[0])) {
@@ -222,9 +222,9 @@ foreach ($transclusions as $page) {
 		if (empty($rfcid)) {
 			continue;
 		}
-		
+
 		$rfcid_list[] = $rfcid;
-		
+
 		$categorymeta = preg_replace("/\s*\}*/", "", $categorymeta);
 		$categorymeta = preg_replace("/=*/", "", $categorymeta);
 		$categorymeta = preg_replace("/\|time([^|]|[^}])*/", "", $categorymeta);
@@ -233,7 +233,7 @@ foreach ($transclusions as $page) {
 
 		unset($forcedtimecheck);
 		unset($rfcidcheck);
-		
+
 		// Step 4: Inspecting for expiration. Something that's expired gets removed; something that's not expired gets moved up to the big leagues! Whee!
 		if (time() - $timestamp > 2592000 && $timestamp != "" && !preg_match('/<!--\s*RFCBot\s+Ignore\s+Expired\s*-->/i',$content) || preg_match("/\/Archive \d+/", $page)) {
 			echo "RFC expired. Removing tag; leaving anchor.\n";
@@ -244,9 +244,9 @@ foreach ($transclusions as $page) {
 			
 			echo "Editing [[$page]]\n";
 			$page->edit($content,"Removing expired RFC template.");
-			
+
 			$all_expired[] = $rfcid;
-			
+
 			$updateRow = $rfcdb->prepare("UPDATE `rfc` SET rfc_expired=1 WHERE rfc_id=?;");
 			$updateRow->bind_param("s",$rfcid);
 			$updateRow->execute();
@@ -263,7 +263,7 @@ foreach ($transclusions as $page) {
 			if (count($listings[$rfcid]["category"]) == 0) {
 				$listings[$rfcid]["category"][0] = "unsorted";
 			}
-		
+
 			// Check that the database is upto date with everything
 			$return='';
 			$rfcSelect = $rfcdb->prepare("SELECT rfc_expired FROM rfc WHERE rfc_id=?;");
@@ -272,7 +272,7 @@ foreach ($transclusions as $page) {
 			$rfcSelect->bind_result($return);
 			$rfcSelect->fetch();
 			$rfcSelect->close();
-		
+
 			if ($return==1) {
 				$notExpired = $rfcdb->prepare("UPDATE `rfc` SET rfc_expired=0 WHERE rfc_id=?;");
 				$notExpired->bind_param("s",$rfcid);
@@ -284,12 +284,12 @@ foreach ($transclusions as $page) {
 				$insertId->execute();
 				$insertId->close();
 			}
-		
+
 			$updateRow = $rfcdb->prepare("UPDATE `rfc` SET rfc_timestamp=? WHERE rfc_id=?;");
 			$updateRow->bind_param("is",$listings[$rfcid]["timestamp"],$rfcid);
 			$updateRow->execute();
 			$updateRow->close();
-		
+
 			$return='';
 			$rfcSelect = $rfcdb->prepare("SELECT rfcc_category FROM rfc_category WHERE rfcc_id=?;");
 			$rfcSelect->bind_param("s",$rfcid);
@@ -300,7 +300,7 @@ foreach ($transclusions as $page) {
 				$database_cat[] = $return;
 			}
 			$rfcSelect->close();
-		
+
 			foreach ($listings[$rfcid]["category"] as $category) {
 				if (!in_array($category,$database_cat)) {
 					$insertId = $rfcdb->prepare("INSERT INTO `rfc_category` (`rfcc_id`, `rfcc_category`) VALUES (?, ?);");
@@ -367,11 +367,11 @@ foreach ($RFC_pagetitles as $RFCcategory => $RFCpage) {
 	$summary_added = array();
 	$summary_removed = array();
 	$summary_removed = $all_expired[$RFCcategory];
-	
+
 	$RFCpage = $wiki->page($RFCpage);
 	$oldpage = $RFCpage->content();
 	$newpage = $RFC_submissions[$RFCcategory];
-	
+
 	$rfcid='';
 	$rfcpage='';
 	$rfcSelect = $rfcdb->prepare("SELECT DISTINCT rfc_id,rfc_page FROM rfc JOIN rfc_category ON rfc_id=rfcc_id 
@@ -379,54 +379,54 @@ foreach ($RFC_pagetitles as $RFCcategory => $RFCpage) {
 	$rfcSelect->bind_param("s",$RFCcategory);
 	$rfcSelect->execute();
 	$rfcSelect->bind_result($rfcid,$rfcpage);
-	
+
 	$counter++;
 	$rfclisting .= "| group" . $counter . " = [[" . $RFCpage . "|" . str_replace("Wikipedia:Requests for comment/", "", $RFCpage) . "]]\n";
 	$rfclisting .= "| list" . $counter . " = ";
 	$dot=false;
-	
+
 	while ($rfcSelect->fetch()) {
 		$temp = "[[$rfcpage#rfc_$rfcid|$rfcpage]]";
-		
+
 		if (!$dot) {
 			$rfclisting .= $temp;
 			$dot=true;
 		} else {
 			$rfclisting .= '{{dot}}'.$temp;
 		}
-		
+
 		$temp = "'''$temp'''\n";
-		
+
 		$newpage .= $temp;
 		$newpage .= $listings[$rfcid]["description"]."\n";
-		
+
 		// Crappy hack to get the edit summary nice
 		if (strpos($oldpage, $temp) === false) {
 			$summary_added[] = $rfcpage;
 		}
 	}
-	
-	
+
+
 	$rfclisting .= "\n";
-	
+
 	$rfcSelect->close();
-	
+
 	$newpage .= "{{RFC list footer|" . $RFCcategory . "|hide_instructions={{{hide_instructions}}} }}";
-	
+
 	if (count($summary_added)>0) {
 		$summary .= "Added: ";
 		foreach ($summary_added as $add) {
 			$summary .= "[[$add]] ";
 		}
 	}
-	
+
 	if (!empty($summary_removed)) {
 		$summary .= "Removed:";
 		foreach ($summary_removed as $removed) {
 			$summary .= " [[$removed]]";
 		}
 	}
-	
+
 	if ($oldpage != $newpage) {
 		if (empty($summary)) {
 			$summary = 'Maintenance';
@@ -457,7 +457,7 @@ foreach ($frscontent as $line) {
 		}
 		$frs_users[$m[1]][$section] = $m[3];
 	}
-	
+
 	if (!empty($line) && strpos('<!-- END OF RFC SECTION. DO NOT REMOVE THIS COMMENT. -->',$line) !== false) {
 		break;
 	}
@@ -473,12 +473,12 @@ foreach ($frs_users as $username => $extra) {
 	$enSelect->bind_result($userid,$user_ec);
 	$enSelect->fetch();
 	$enSelect->close();
-	
+
 	// Does the user exist
 	if (empty($userid)) {
 		continue;
 	}
-	
+
 	$frsusername='';
 	$frsdisqualified='';
 	$frsquery = $rfcdb->prepare("SELECT frs_username,frs_disqualified FROM frs_user WHERE frs_userid=?;");
@@ -487,14 +487,14 @@ foreach ($frs_users as $username => $extra) {
 	$frsquery->bind_result($frsusername,$frsdisqualified);
 	$frsquery->fetch();
 	$frsquery->close();
-	
+
 	if (empty($frsusername)) {
 		$frsquery = $rfcdb->prepare("INSERT INTO frs_user (frs_userid,frs_username,frs_disqualified) VALUES (?,?,0);");
 		$frsquery->bind_param("is",$userid,$username);
 		$frsquery->execute();
 		$frsquery->close();
 	}
-	
+
 	// Check that the user is vaild:
 	$disqualified = false;
 
@@ -523,20 +523,20 @@ foreach ($frs_users as $username => $extra) {
 			$disqualified = true;
 		}
 	}
-	
+
 	if ($disqualified) {
 		$frsquery = $rfcdb->prepare("UPDATE frs_user SET frs_disqualified=1 WHERE frs_userid=?;");
 		$frsquery->bind_param("i",$userid);
 		$frsquery->execute();
 		$frsquery->close();
 		continue;
-	} elseif ($frsdisqualified) {	
+	} elseif ($frsdisqualified) {
 		$frsquery = $rfcdb->prepare("UPDATE frs_user SET frs_disqualified=0 WHERE frs_userid=?;");
 		$frsquery->bind_param("i",$userid);
 		$frsquery->execute();
 		$frsquery->close();
 	}
-	
+
 	$db_limits = array();
 	$frsl_category='';
 	$frsl_limit='';
@@ -548,7 +548,7 @@ foreach ($frs_users as $username => $extra) {
 		$db_limits[$frsl_category] = $frsl_limit;
 	}
 	$frsquery->close();
-	
+
 	foreach ($extra as $cat => $limit) {
 		if (!array_key_exists($cat,$db_limits)) {
 			$frsquery = $rfcdb->prepare("INSERT INTO frs_limits (frsl_userid,frsl_category,frsl_limit) VALUES (?,?,?);");
@@ -569,7 +569,7 @@ $delete_all = array();
 $frsl_userid='';
 $frsl_category='';
 $frsl_limit='';
-$frsquery = $rfcdb->prepare("SELECT frs_username,frs_userid,frsl_category 
+$frsquery = $rfcdb->prepare("SELECT frs_username,frs_userid,frsl_category
 			     FROM frs_user JOIN frs_limits ON frs_userid=frsl_userid;");
 $frsquery->execute();
 $frsquery->bind_result($frs_username,$frs_userid,$frsl_category);
