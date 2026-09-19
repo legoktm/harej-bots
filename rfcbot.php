@@ -53,6 +53,73 @@ function generateRfcId ($tries=0) {
 	}
 }
 
+/**
+ * Get all the redirects for the given target template.
+ */
+function getRfcTemplateNames ($wiki, $target = 'Template:Rfc') {
+	$names = array(preg_replace('/^Template:/', '', $target));
+	$continue = '';
+	while (true) {
+		$q = array(
+			'action'      => 'query',
+			'prop'        => 'redirects',
+			'titles'      => $target,
+			'rdnamespace' => 10, // templates only; skip cross-namespace redirects
+			'rdlimit'     => 500,
+			'rawcontinue' => 1,
+		);
+		if ($continue != '') {
+			$q['rdcontinue'] = $continue;
+		}
+
+		$ret = $wiki->query($q);
+		if (isset($ret['error']['info'])) {
+			echo "Could not look up redirects to $target: " . $ret['error']['info'] . "\n";
+			exit(1);
+		}
+		if (!isset($ret['query']['pages'])) {
+			echo "Could not look up redirects to $target: no response from the API.\n";
+			exit(1);
+		}
+
+		foreach ($ret['query']['pages'] as $pg) {
+			if (isset($pg['missing'])) {
+				echo "Could not look up redirects to $target: the page does not exist.\n";
+				exit(1);
+			}
+			if (!isset($pg['redirects'])) {
+				continue;
+			}
+			foreach ($pg['redirects'] as $redirect) {
+				$names[] = preg_replace('/^Template:/', '', $redirect['title']);
+			}
+		}
+
+		if (!isset($ret['query-continue']['redirects']['rdcontinue'])) {
+			return array_values(array_unique($names));
+		}
+		$continue = $ret['query-continue']['redirects']['rdcontinue'];
+	}
+}
+
+/**
+ * Prep template names for use in a regex
+ */
+function buildRfcNameAlternation ($names) {
+	usort($names, function ($a, $b) { return strlen($b) - strlen($a); });
+
+	$alternatives = array();
+	foreach ($names as $name) {
+		$parts = preg_split('/[ _]+/', $name);
+		foreach ($parts as &$part) {
+			$part = preg_quote($part, '/');
+		}
+		unset($part);
+		$alternatives[] = implode('[ _]+', $parts);
+	}
+	return implode('|', $alternatives);
+}
+
 $botuser = 'Legobot';
 
 //require_once 'database.inc';
@@ -60,6 +127,9 @@ require_once 'botclasses.php';
 require_once 'new_mediawiki.php';
 require_once 'harejpass.php';
 $wiki = new mediawiki($botuser, $botpass);
+
+$RFC_NAMES = buildRfcNameAlternation(getRfcTemplateNames($wiki));
+$RFC_TAG   = '\{\{\s*(?:' . $RFC_NAMES . ')\s*(?=[|}])[^}]*\}\}';
 
 // Definitions
 $RFC_categories	= array(
@@ -144,15 +214,14 @@ foreach ($transclusions as $page) {
 	}
 
 	// Syntax Correction. RFC templates with common errors are corrected and then saved on the wiki.
-	preg_match_all("/(\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))\s?[^}]*\}{2}(\n|,| )*){2,}/i", $content, $fixes);
+	preg_match_all("/(" . $RFC_TAG . "(\n|,| )*){2,}/i", $content, $fixes);
 	foreach ($fixes[0] as $fix) {
-		preg_match_all("/(?=\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))\s?\|\s?)[^}]*/i", $fix, $parts);
+		preg_match_all("/(?=\{\{\s*(?:" . $RFC_NAMES . ")\s*\|\s?)[^}]*/i", $fix, $parts);
 		$newtag = "";
 		foreach ($parts[0] as $part) {
 			$newtag .= $part . "|";
 		}
-		$newtag		= str_replace("{{rfc|", "", $newtag);
-		$newtag		= str_replace("{{rfctag|", "", $newtag);
+		$newtag		= preg_replace("/\{\{\s*(?:" . $RFC_NAMES . ")\s*\|/i", "", $newtag);
 		$newtag		= str_replace("}}", "", $newtag);
 		$newtag		= "{{rfc|" . $newtag . "}}\n\n";
 		$newtag		= str_replace("|}}", "}}", $newtag);
@@ -165,7 +234,7 @@ foreach ($transclusions as $page) {
 	// Step 2: Seeding RFC IDs.
 	// Before we read the RFC IDs and match them up to a title, description, etc.,
 	// we want to make sure each RFC template has a corresponding RFC ID.
-	preg_match_all("/\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))\s?[^}]*\}{2}/i", $content, $matches);
+	preg_match_all("/" . $RFC_TAG . "/i", $content, $matches);
 	foreach ($matches[0] as $match) {
 		if (strpos($match, "|rfcid=") === false) { // if the rfcid is not found within an RFC template
 			$rfcid = generateRfcId(); # a seven-character random string with capital letters and digits
@@ -182,14 +251,13 @@ foreach ($transclusions as $page) {
 	}
 
 	// Step 3: Check for RFC templates
-	preg_match_all("/\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))\s?[^}]*\}{2}/i", $content, $match);
+	preg_match_all("/" . $RFC_TAG . "/i", $content, $match);
 	for ($result=0; $result < count($match[0]); $result++) { # For each result on a page
 		//Get the details
 
 		// Category
-		preg_match_all("/\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))[^2]\s?[^}]*\}{2}/i", $content, $m);
-		$categorymeta = preg_replace("/\{*\s?(Rfc(?!id)(tag)?)\s?\|?\s?(1=)?\s?/i", "", $m[0][$result]);
-		
+		$categorymeta = preg_replace("/^\{*\s*(?:" . $RFC_NAMES . ")\s*\|?\s*(1=)?\s*/i", "", $match[0][$result]);
+
 		// An RFC can be forced to have a certain timestamp with the time= parameter in RFC template.
 		unset($timestamp);
 		preg_match("/\|time=([^|]|[^}])*/", $categorymeta, $forcedtimecheck);
@@ -202,8 +270,8 @@ foreach ($transclusions as $page) {
 		// Description and Timestamp
 		if (!isset($timestamp)) {
 			$description = preg_replace("/<!--[^\n]+-->/","",$content);
-			preg_match_all("/\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))\s?[^}]*\}{2}(.|\n)*?([0-2]\d):([0-5]\d),\s(\d{1,2})\s(\w*)\s(\d{4})\s\(UTC\)/im", $description, $m);
-			$description = preg_replace("/\{{2}\s?Rfc(tag)?(?!\s+(top|bottom))\s?[^}]*\}{2}\n*/i", "", $m[0][$result]); // get rid of the RFC template
+			preg_match_all("/" . $RFC_TAG . "(.|\n)*?([0-2]\d):([0-5]\d),\s(\d{1,2})\s(\w*)\s(\d{4})\s\(UTC\)/im", $description, $m);
+			$description = preg_replace("/" . $RFC_TAG . "\n*/i", "", $m[0][$result]); // get rid of the RFC template
 			$description = preg_replace("/={2,}\n+/", "'''\n\n", $description); // replace section headers with boldness
 			$description = preg_replace("/\n+={2,}/", "\n\n'''", $description);
 			//$description = preg_replace("/\{\{[^}]+\}\}/", "", $description); // remove any other templates
@@ -239,9 +307,9 @@ foreach ($transclusions as $page) {
 			echo "RFC expired. Removing tag; leaving anchor.\n";
 
 			$rfcAnchor = "{{anchor|rfc_" . $rfcid . "}}\n";
-			$content = preg_replace("/\{\{rfc(tag)?(?!\s+(top|bottom))\s*(\|[a-z0-9\., ]*)*\s*\|rfcid=$rfcid\s*(\|[a-z0-9\., \|]*)*\s*\}\}(\n|\s)?/i", $rfcAnchor, $content);
-			
-			
+			$content = preg_replace("/\{\{\s*(?:" . $RFC_NAMES . ")\s*(\|[a-z0-9\., ]*)*\s*\|rfcid=" . $rfcid . "\s*(\|[a-z0-9\., \|]*)*\s*\}\}(\n|\s)?/i", $rfcAnchor, $content);
+
+
 			echo "Editing [[$page]]\n";
 			$page->edit($content,"Removing expired RFC template.");
 
@@ -374,7 +442,7 @@ foreach ($RFC_pagetitles as $RFCcategory => $RFCpage) {
 
 	$rfcid='';
 	$rfcpage='';
-	$rfcSelect = $rfcdb->prepare("SELECT DISTINCT rfc_id,rfc_page FROM rfc JOIN rfc_category ON rfc_id=rfcc_id 
+	$rfcSelect = $rfcdb->prepare("SELECT DISTINCT rfc_id,rfc_page FROM rfc JOIN rfc_category ON rfc_id=rfcc_id
 				      WHERE rfcc_category=? AND rfc_expired=0 ORDER BY rfc_timestamp DESC;");
 	$rfcSelect->bind_param("s",$RFCcategory);
 	$rfcSelect->execute();
