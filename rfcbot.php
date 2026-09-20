@@ -126,7 +126,122 @@ $botuser = 'Legobot';
 require_once 'botclasses.php';
 require_once 'new_mediawiki.php';
 require_once 'harejpass.php';
-$wiki = new mediawiki($botuser, $botpass);
+
+/**
+ * Dry run mode (--dry-run): read everything as normal, but print wiki edits as
+ * diffs and database writes as SQL instead of performing them.
+ */
+$dryRun = in_array('--dry-run', $argv, true);
+
+/**
+ * Unified diff of two strings, for showing what a dry-run edit would change
+ */
+function dryRunDiff ($old, $new) {
+	$a = tempnam(sys_get_temp_dir(), 'rfcbot');
+	$b = tempnam(sys_get_temp_dir(), 'rfcbot');
+	file_put_contents($a, (string)$old);
+	file_put_contents($b, (string)$new);
+	exec('diff -u --label current --label proposed ' . escapeshellarg($a) . ' ' . escapeshellarg($b) . ' 2>&1', $out, $status);
+	unlink($a);
+	unlink($b);
+	// diff exits 0 for identical, 1 for different, anything else is an error
+	if ($status === 0) {
+		return "(no changes)\n";
+	}
+	if ($status !== 1) {
+		echo "Could not diff for dry run: " . implode("\n", $out) . "\n";
+		exit(1);
+	}
+	return implode("\n", $out) . "\n";
+}
+
+class DryRunMediawiki extends mediawiki {
+	public function page ($title) {
+		return new DryRunMediawikiPage($this, $title);
+	}
+}
+
+class DryRunMediawikiPage extends MediawikiPage {
+	/** Content as it would be after the edits so far, so later diffs build on earlier ones */
+	private $dryRunContent = null;
+
+	public function content () {
+		return $this->dryRunContent === null ? parent::content() : $this->dryRunContent;
+	}
+
+	public function edit ($content, $summary = "", $minor = false, $bot = true, $retry = true) {
+		echo "[dry run] Would save [[" . $this->title() . "]]: $summary\n";
+		echo dryRunDiff($this->content(), $content);
+		$this->dryRunContent = $content;
+		return array();
+	}
+
+	public function addSection ($heading, $content, $minor = false, $bot = true, $retry = true) {
+		echo "[dry run] Would add section \"$heading\" to [[" . $this->title() . "]]:\n$content\n";
+		return array();
+	}
+}
+
+/**
+ * Passes SELECTs through to the real database; everything else is printed
+ */
+class DryRunDatabase {
+	private $db;
+
+	public function __construct ($db) {
+		$this->db = $db;
+	}
+
+	public function prepare ($sql) {
+		if (preg_match('/^\s*SELECT\b/i', $sql)) {
+			return $this->db->prepare($sql);
+		}
+		return new DryRunStatement($sql);
+	}
+
+	public function __call ($name, $args) {
+		return call_user_func_array(array($this->db, $name), $args);
+	}
+
+	public function __get ($name) {
+		return $this->db->$name;
+	}
+}
+
+class DryRunStatement {
+	private $sql;
+	private $params = array();
+
+	public function __construct ($sql) {
+		$this->sql = $sql;
+	}
+
+	public function bind_param ($types, &...$params) {
+		// Keep the references: like mysqli, values are read at execute() time
+		$this->params = $params;
+		return true;
+	}
+
+	public function execute () {
+		$values = array();
+		foreach ($this->params as $param) {
+			$values[] = (string)$param;
+		}
+		echo "[dry run] Would run: " . preg_replace('/\s+/', ' ', trim($this->sql)) . " " . json_encode($values) . "\n";
+		return true;
+	}
+
+	public function close () {
+		return true;
+	}
+}
+
+if ($dryRun) {
+	echo "Dry run: no edits will be saved and no database writes will be made.\n";
+	$wiki = new DryRunMediawiki($botuser, $botpass);
+} else {
+	$wiki = new mediawiki($botuser, $botpass);
+}
 
 $RFC_NAMES = buildRfcNameAlternation(getRfcTemplateNames($wiki));
 $RFC_TAG   = '\{\{\s*(?:' . $RFC_NAMES . ')\s*(?=[|}])[^}]*\}\}';
@@ -177,6 +292,9 @@ $rfcdb = new mysqli('tools.db.svc.wikimedia.cloud',$toolserver_username,$toolser
 if(mysqli_connect_errno()) {
 	echo "Connection Failed: " . mysqli_connect_errno();
 	die();
+}
+if ($dryRun) {
+	$rfcdb = new DryRunDatabase($rfcdb);
 }
 echo "Connecting to replica\n";
 $replica_mycnf = parse_ini_file("/data/project/legobot/replica.my.cnf");
